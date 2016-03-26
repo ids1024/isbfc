@@ -70,7 +70,16 @@ def optimize(tokens):
                 j += 1
             else:
                 del newtokens[i:j+1]
-                newtokens.insert(i, (SET, 0))
+                # ADD before clear does nothing, so remove it
+                if i>0 and newtokens[i-1][0] == ADD:
+                    del newtokens[i-1]
+                    i -= 1
+                value = 0
+                # ADD after SET can be simplified to SET
+                if i<len(newtokens) and newtokens[i][0] == ADD:
+                    value = newtokens[i][1]
+                    del newtokens[i]
+                newtokens.insert(i, (SET, value))
         i += 1
 
     return newtokens
