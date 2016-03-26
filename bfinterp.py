@@ -36,10 +36,7 @@ def interp(code):
         elif token == ADD:
             offset, add = value
             newval = mem[cur+offset] + add
-            while newval < 0:
-                newval += 256
-            while newval > 255:
-                newval -= 256
+            newval %= 256
             mem[cur+offset] = newval
         elif token == SET:
             offset, val = value
@@ -47,10 +44,7 @@ def interp(code):
         elif token == MULCOPY:
             src, dest, mul = value
             newval = mem[cur+dest] + mem[cur+src] * mul
-            while newval < 0:
-                newval += 256
-            while newval > 255:
-                newval -= 256
+            newval %= 256
             mem[cur+dest] = newval
         elif token == SCAN:
             while mem[cur] != 0:
