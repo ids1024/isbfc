@@ -31,8 +31,30 @@ def parse(code):
             tokens.append((OUTPUT, None))
     return tokens
 
+def optimize(tokens):
+    add = 0
+    move = 0
+    newtokens = []
+    for token, value in tokens:
+        if add and token != ADD:
+            newtokens.append((ADD, add))
+            add = 0
+        elif move and token != MOVE:
+            newtokens.append((MOVE, move))
+            move = 0
+
+        if token == ADD:
+            add += value
+        elif token == MOVE:
+            move += value
+        else:
+            newtokens.append((token, value))
+
+    return newtokens
+
 def compile(code):
     tokens = parse(code)
+    tokens = optimize(tokens)
     output = """.section .bss
     .lcomm mem, 8192
     .set startidx, mem + 4096
@@ -49,11 +71,11 @@ _start:
             if value == 1:
                 output += "    inc %r12\n"
             elif value > 1:
-                output += "    add $" + str(value) + " %r12\n"
+                output += "    add $" + str(value) + ", %r12\n"
             elif value == -1:
                 output += "    dec %r12\n"
             elif value < -1:
-                output += "    sub $" + str(value) + " %r12\n"
+                output += "    sub $" + str(-value) + ", %r12\n"
         elif token == MOVE:
             if value:
                 output += "    movq %r12, (%rbx)\n"
