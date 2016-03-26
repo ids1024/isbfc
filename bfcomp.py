@@ -106,10 +106,14 @@ _start:
         elif token == LOOPSTART:
             loopnum += 1
             loops.append(loopnum)
-            output += "    loop" + str(loopnum) + ":\n"
-        elif token == LOOPEND:
             output += "    cmp $0, %r12\n" \
-                      "    jnz loop" + str(loops.pop()) + '\n'
+                      "    jz endloop" + str(loopnum) + '\n' \
+                      "    loop" + str(loopnum) + ":\n"
+        elif token == LOOPEND:
+            loop = str(loops.pop())
+            output += "    cmp $0, %r12\n" \
+                      "    jnz loop" + loop + '\n' \
+                      "    endloop" + loop + ':\n'
         elif token == INPUT:
             output += """
     movq $0, %rax
