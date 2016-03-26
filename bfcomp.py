@@ -11,6 +11,7 @@ LOOPEND=3
 MOVE=4
 ADD=5
 SET=6
+MULCOPY=7
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -96,8 +97,33 @@ def optimize(tokens):
             move = offset + newtokens[i+2][1]
             del newtokens[i:i+3]
             newtokens.insert(i, (opp, (offset, value)))
-            newtokens.insert(i+1, (MOVE, move))
+            if move:
+                newtokens.insert(i+1, (MOVE, move))
 
+        i += 1
+
+    # Optimize copy/multiplication
+    i = 0
+    while i < len(newtokens):
+        if newtokens[i][0] == LOOPSTART:
+            j = i + 1
+            adds = {}
+            while j < len(newtokens) and newtokens[j][0] != LOOPEND:
+                if newtokens[j][0] != ADD:
+                    break
+                offset, add = newtokens[j][1]
+                adds[offset] = adds.get(offset, 0) + add
+                j += 1
+            else:
+                if 0 not in adds:
+                    print("Warning: Infinite loop detected.")
+                elif adds[0] == -1:
+                    del adds[0]
+                    del newtokens[i:j+1]
+                    for k, v in adds.items():
+                        newtokens.insert(i, (MULCOPY, (0, k, v)))
+                        i += 1
+                    newtokens.insert(i, (SET, (0, 0)))
         i += 1
 
     return newtokens
@@ -131,6 +157,27 @@ _start:
                 output += "    dec " + dest + "\n"
             elif value <= -1:
                 output += "    sub $" + str(-value) + ", " + dest + "\n"
+        elif token == MULCOPY:
+            src, dest, mul = value
+            if src == 0:
+                src = "%r12"
+            else:
+                src = str(src*8)+"(%rbx)"
+            if dest == 0:
+                dest = "%r12"
+            else:
+                dest = str(dest*8)+"(%rbx)"
+
+            if mul not in (-1, 1):
+                output += "    movq " + src + ", %rax\n" \
+                          "    movq $" + str(abs(mul)) + ", %rdx\n" \
+                          "    mul %rdx\n"
+                src = "%rax"
+            if mul > 0:
+                output += "    add " + src + ", " + dest + "\n"
+            else:
+                output += "    sub " + src + ", " + dest + "\n"
+                
         elif token == SET:
                 offset, value = value
                 if offset == 0:
