@@ -12,6 +12,7 @@ MOVE=4
 ADD=5
 SET=6
 MULCOPY=7
+SCAN=8
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -126,6 +127,18 @@ def optimize(tokens):
                     newtokens.insert(i, (SET, (0, 0)))
         i += 1
 
+    # Optimize scan loop
+    i = 0
+    while i < len(newtokens)-2:
+        if (newtokens[i][0] == LOOPSTART and
+             newtokens[i+1][0] == MOVE and
+             newtokens[i+2][0] == LOOPEND):
+
+            offset = newtokens[i+1][1]
+            del newtokens[i:i+3]
+            newtokens.insert(i, (SCAN, offset))
+        i += 1
+
     return newtokens
 
 def compile(code):
@@ -203,6 +216,22 @@ _start:
             output += "    cmp $0, %r12\n" \
                       "    jnz loop" + loop + '\n' \
                       "    endloop" + loop + ':\n'
+        elif token == SCAN:
+            # Slighly more optimal than normal loop and move
+            loopnum += 1
+
+            output += "    cmp $0, %r12\n" \
+                      "    jz endloop" + str(loopnum) + '\n' \
+                      "    movq %r12, (%rbx)\n" \
+                      "    loop" + str(loopnum) + ":\n"
+            if value > 0:
+                output += "    add $" + str(8*value) + ", %rbx\n"
+            else:
+                output += "    sub $" + str(-8*value) + ", %rbx\n"
+            output += "    cmp $0, (%rbx)\n" \
+                      "    jnz loop" + str(loopnum) + '\n' \
+                      "    movq (%rbx), %r12\n" \
+                      "    endloop" + str(loopnum) + ':\n'
         elif token == INPUT:
             output += """
     movq $0, %rax
