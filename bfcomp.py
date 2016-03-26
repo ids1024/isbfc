@@ -60,10 +60,8 @@ def optimize(tokens):
 
     # Optimize out clear loop
     i = 0
-    loop = 0
     while i < len(newtokens):
         if newtokens[i][0] == LOOPSTART:
-            loop += 1
             j = i + 1
             while j < len(newtokens) and newtokens[j][0] != LOOPEND:
                 if newtokens[j][0] != ADD:
