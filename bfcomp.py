@@ -2,6 +2,8 @@ import sys
 import os
 import subprocess
 
+BUFSIZE = 8192
+
 OUTPUT=0
 INPUT=1
 LOOPSTART=2
@@ -73,8 +75,8 @@ def compile(code):
     tokens = parse(code)
     tokens = optimize(tokens)
     output = """.section .bss
-    .lcomm mem, 8192
-    .set startidx, mem + 4096
+    .lcomm mem, """ + str(BUFSIZE) + """
+    .set startidx, mem + """ + str(int(BUFSIZE/2)) + """
 .section .text
 .global _start
 _start:
