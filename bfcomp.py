@@ -79,7 +79,24 @@ def optimize(tokens):
                 if i<len(newtokens) and newtokens[i][0] == ADD:
                     value = newtokens[i][1]
                     del newtokens[i]
-                newtokens.insert(i, (SET, value))
+                newtokens.insert(i, (SET, (0, value)))
+        i += 1
+
+    # Optimize MOVE + SET + MOVE
+    i = 0
+    while i < len(newtokens)-2:
+        if (newtokens[i][0] == MOVE and
+             newtokens[i+1][0] == SET and
+             newtokens[i+2][0] == MOVE):
+
+            assert newtokens[i+1][1][0] == 0
+            value = newtokens[i+1][1][1]
+            offset = newtokens[i][1]
+            move = offset + newtokens[i+2][1]
+            del newtokens[i:i+3]
+            newtokens.insert(i, (SET, (offset, value)))
+            newtokens.insert(i+1, (MOVE, move))
+
         i += 1
 
     return newtokens
@@ -109,7 +126,11 @@ _start:
             elif value < -1:
                 output += "    sub $" + str(-value) + ", %r12\n"
         elif token == SET:
-                output += "    movq $" + str(value) + ", %r12\n"
+                offset, value = value
+                if offset == 0:
+                    output += "    movq $" + str(value) + ", %r12\n"
+                else:
+                    output += "    movq $" + str(value) + ", "+str(offset*8)+"(%rbx)\n"
         elif token == MOVE:
             if value:
                 output += "    movq %r12, (%rbx)\n"
