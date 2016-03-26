@@ -51,7 +51,7 @@ def interp(code):
                 newval += 256
             while newval > 255:
                 newval -= 256
-            mem[dest+offset] = newval
+            mem[cur+dest] = newval
         elif token == SCAN:
             while mem[cur] != 0:
                 cur += value
