@@ -2,7 +2,37 @@ import sys
 import os
 import subprocess
 
+OUTPUT=0
+INPUT=1
+LOOPSTART=2
+LOOPEND=3
+MOVE=4
+ADD=5
+
+def parse(code):
+    code = ''.join(i for i in code if i in '.,[]+-<>')
+    tokens = []
+    for i in code:
+        if i == '+':
+            tokens.append((ADD, 1))
+        elif i == '-':
+            tokens.append((ADD, -1))
+        elif i == '>':
+            tokens.append((MOVE, 1))
+        elif i == '<':
+            tokens.append((MOVE, -1))
+        elif i == '[':
+            tokens.append((LOOPSTART, None))
+        elif i == ']':
+            tokens.append((LOOPEND, None))
+        elif i == ',':
+            tokens.append((INPUT, None))
+        if i == '.':
+            tokens.append((OUTPUT, None))
+    return tokens
+
 def compile(code):
+    tokens = parse(code)
     output = """.section .bss
     .lcomm mem, 8192
     .set startidx, mem + 4096
@@ -12,30 +42,34 @@ _start:
     movq $0, %r12
     movq $startidx, %rbx
 """
-    code = ''.join(i for i in code if i in '.,[]+-<>')
     loops = []
     loopnum = 0
-    for i in code:
-        if i == '+':
-            output += "    inc %r12\n"
-        elif i == '-':
-            output += "    dec %r12\n"
-        elif i == '>':
-            output += "    movq %r12, (%rbx)\n" \
-                      "    add $8, %rbx\n" \
-                      "    movq (%rbx), %r12\n"
-        elif i == '<':
-            output += "    movq %r12, (%rbx)\n" \
-                      "    sub $8, %rbx\n" \
-                      "    movq (%rbx), %r12\n"
-        elif i == '[':
+    for token, value in tokens:
+        if token == ADD:
+            if value == 1:
+                output += "    inc %r12\n"
+            elif value > 1:
+                output += "    add $" + str(value) + " %r12\n"
+            elif value == -1:
+                output += "    dec %r12\n"
+            elif value < -1:
+                output += "    sub $" + str(value) + " %r12\n"
+        elif token == MOVE:
+            if value:
+                output += "    movq %r12, (%rbx)\n"
+                if value > 0:
+                    output += "    add $" + str(8*value) + ", %rbx\n"
+                else:
+                    output += "    sub $" + str(-8*value) + ", %rbx\n"
+                output += "    movq (%rbx), %r12\n"
+        elif token == LOOPSTART:
             loopnum += 1
             loops.append(loopnum)
             output += "    loop" + str(loopnum) + ":\n"
-        elif i == ']':
+        elif token == LOOPEND:
             output += "    cmp $0, %r12\n" \
                       "    jnz loop" + str(loops.pop()) + '\n'
-        elif i == ',':
+        elif token == INPUT:
             output += """
     movq $0, %rax
     movq $0, %rdi
@@ -45,7 +79,7 @@ _start:
     movq (%rbx), %r12
 
 """
-        elif i == '.':
+        elif token == OUTPUT:
             output += """
     movq %r12, (%rbx)
     movq $1, %rax
