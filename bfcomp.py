@@ -52,6 +52,10 @@ def optimize(tokens):
             move += value
         else:
             newtokens.append((token, value))
+    if add:
+        newtokens.append((ADD, add))
+    elif move:
+        newtokens.append((MOVE, move))
 
     # Optimize out clear loop
     i = 0
