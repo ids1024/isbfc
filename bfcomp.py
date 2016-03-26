@@ -55,6 +55,15 @@ _start:
     syscall
 
 """
+
+    # Exit syscall
+    output += """
+
+    movq $60, %rax
+    movq $0, %rdi
+    syscall
+"""
+
     return output
 
 if __name__ == '__main__':
