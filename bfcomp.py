@@ -8,6 +8,7 @@ LOOPSTART=2
 LOOPEND=3
 MOVE=4
 ADD=5
+SET=6
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -50,6 +51,22 @@ def optimize(tokens):
         else:
             newtokens.append((token, value))
 
+    # Optimize out clear loop
+    i = 0
+    loop = 0
+    while i < len(newtokens):
+        if newtokens[i][0] == LOOPSTART:
+            loop += 1
+            j = i + 1
+            while j < len(newtokens) and newtokens[j][0] != LOOPEND:
+                if newtokens[j][0] != ADD:
+                    break
+                j += 1
+            else:
+                del newtokens[i:j+1]
+                newtokens.insert(i, (SET, 0))
+        i += 1
+
     return newtokens
 
 def compile(code):
@@ -76,6 +93,8 @@ _start:
                 output += "    dec %r12\n"
             elif value < -1:
                 output += "    sub $" + str(-value) + ", %r12\n"
+        elif token == SET:
+                output += "    movq $" + str(value) + ", %r12\n"
         elif token == MOVE:
             if value:
                 output += "    movq %r12, (%rbx)\n"
