@@ -1,7 +1,7 @@
 import sys
 
 from parser import parse, optimize
-from parser import OUTPUT, INPUT, LOOPSTART, LOOPEND, MOVE
+from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN
 
 
@@ -13,10 +13,10 @@ def dumpir(code):
             print('output')
         elif token == INPUT:
             print('input')
-        elif token == LOOPSTART:
-            print('loopstart')
-        elif token == LOOPEND:
-            print('loopend')
+        elif token == LOOP:
+            print('loop')
+        elif token == ENDLOOP:
+            print('endloop')
         elif token == MOVE:
             print('move(offset=%d)' % value)
         elif token == ADD:
