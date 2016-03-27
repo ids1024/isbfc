@@ -67,7 +67,8 @@ def optimize(tokens):
                 j += 1
             else:
                 if 0 not in adds:
-                    print("Warning: Infinite loop detected.")
+                    pass
+                    # print("Warning: Infinite loop detected.")
                 elif len(adds) == 1:
                     del newtokens[i:j+1]
                     newtokens.insert(i, (SET, (0, 0)))
