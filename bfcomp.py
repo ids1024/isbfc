@@ -17,7 +17,7 @@ def compile(code):
 .section .text
 .global _start
 _start:
-    movq $0, %r12
+    xor %r12, %r12
     movq $startidx, %rbx
 """
     loops = []
@@ -60,7 +60,9 @@ _start:
                 
         elif token == SET:
                 offset, value = value
-                if offset == 0:
+                if offset == 0 and value == 0:
+                    output += "    xor %r12, %r12\n"
+                elif offset == 0:
                     output += "    movq $" + str(value) + ", %r12\n"
                 else:
                     output += "    movq $" + str(value) + ", "+str(offset*8)+"(%rbx)\n"
@@ -101,8 +103,8 @@ _start:
                       "    endloop" + str(loopnum) + ':\n'
         elif token == INPUT:
             output += """
-    movq $0, %rax
-    movq $0, %rdi
+    xor %rax, %rax
+    xor %rdi, %rdi
     movq %rbx, %rsi
     movq $1, %rdx
     syscall
