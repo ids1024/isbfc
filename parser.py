@@ -95,13 +95,16 @@ def optimize(tokens):
              newtokens[i][0] == MOVE and
              newtokens[i+1][0] in (SET, ADD)):
 
-            opp = newtokens[i+1][0] # SET or ADD
             vals = {}
+            ops = {}
             j = i + 1
             while j < len(newtokens) and newtokens[j][0] != MOVE:
-                if newtokens[j][0] != opp:
+                if newtokens[j][0] not in (SET, ADD):
                     break
                 offset, val = newtokens[j][1]
+                if offset in ops and ops[offset] != newtokens[j][0]:
+                    break
+                ops[offset] = newtokens[j][0] # SET or ADD
                 vals[offset] = vals.get(offset, 0) + val
                 j += 1
             else:
@@ -109,6 +112,7 @@ def optimize(tokens):
                 move = offset + newtokens[j][1]
                 del newtokens[i:j+1]
                 for k, v in vals.items():
+                    opp = ops[k]
                     newtokens.insert(i, (opp, (offset+k, v)))
                     i += 1
                 if move:
