@@ -18,7 +18,7 @@ def dumpir(code):
         elif token == LOOPEND:
             print('loopend')
         elif token == MOVE:
-            print('move(offset=%d) % value')
+            print('move(offset=%d)' % value)
         elif token == ADD:
             print('add(offset=%d, value=%d)' % value)
         elif token == SET:
