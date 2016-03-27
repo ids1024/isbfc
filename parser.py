@@ -58,49 +58,6 @@ def optimize(tokens):
     while i < len(newtokens):
         if newtokens[i][0] == LOOPSTART:
             j = i + 1
-            while j < len(newtokens) and newtokens[j][0] != LOOPEND:
-                if newtokens[j][0] != ADD:
-                    break
-                j += 1
-            else:
-                del newtokens[i:j+1]
-                # ADD before clear does nothing, so remove it
-                if i>0 and newtokens[i-1][0] == ADD:
-                    del newtokens[i-1]
-                    i -= 1
-                value = 0
-                # ADD after SET can be simplified to SET
-                if (i<len(newtokens) and 
-                        newtokens[i][0] == ADD and
-                        newtokens[i][1][0] == 0):
-                    value = newtokens[i][1][1]
-                    del newtokens[i]
-                newtokens.insert(i, (SET, (0, value)))
-        i += 1
-
-    # Optimize MOVE + SET + MOVE and MOVE + ADD + MOVE
-    i = 0
-    while i < len(newtokens)-2:
-        if (newtokens[i][0] == MOVE and
-             newtokens[i+1][0] in (SET, ADD) and
-             newtokens[i+2][0] == MOVE):
-
-            opp = newtokens[i+1][0] # SET or ADD
-            value = newtokens[i+1][1][1]
-            offset = newtokens[i+1][1][0] + newtokens[i][1]
-            move = offset + newtokens[i+2][1] - newtokens[i+1][1][0]
-            del newtokens[i:i+3]
-            newtokens.insert(i, (opp, (offset, value)))
-            if move:
-                newtokens.insert(i+1, (MOVE, move))
-
-        i += 1
-
-    # Optimize copy/multiplication
-    i = 0
-    while i < len(newtokens):
-        if newtokens[i][0] == LOOPSTART:
-            j = i + 1
             adds = {}
             while j < len(newtokens) and newtokens[j][0] != LOOPEND:
                 if newtokens[j][0] != ADD:
@@ -111,6 +68,9 @@ def optimize(tokens):
             else:
                 if 0 not in adds:
                     print("Warning: Infinite loop detected.")
+                elif len(adds) == 1:
+                    del newtokens[i:j+1]
+                    newtokens.insert(i, (SET, (0, 0)))
                 elif adds[0] == -1:
                     del adds[0]
                     del newtokens[i:j+1]
@@ -118,6 +78,41 @@ def optimize(tokens):
                         newtokens.insert(i, (MULCOPY, (0, k, v)))
                         i += 1
                     newtokens.insert(i, (SET, (0, 0)))
+
+        # SET + ADD = SET
+        if (i < len(newtokens)-1 and
+             newtokens[i][0] == SET and
+             newtokens[i+1][0] == ADD and
+             newtokens[i][1][0] == newtokens[i+1][1][0]):
+
+            offset = newtokens[i][1][0]
+            value = newtokens[i][1][1] + newtokens[i+1][1][1]
+            del newtokens[i:i+2]
+            newtokens.insert(i, (SET, (offset, value)))
+
+        # Optimize MOVE + (SET/ADD) + MOVE -> (SET/ADD) + MOVE
+        if (i < len(newtokens)-2 and
+             newtokens[i][0] == MOVE and
+             newtokens[i+1][0] in (SET, ADD)):
+
+            opp = newtokens[i+1][0] # SET or ADD
+            vals = {}
+            j = i + 1
+            while j < len(newtokens) and newtokens[j][0] != MOVE:
+                if newtokens[j][0] != opp:
+                    break
+                offset, val = newtokens[j][1]
+                vals[offset] = vals.get(offset, 0) + val
+                j += 1
+            else:
+                offset = newtokens[i][1]
+                move = offset + newtokens[j][1]
+                del newtokens[i:j+1]
+                for k, v in vals.items():
+                    newtokens.insert(i, (opp, (offset+k, v)))
+                    i += 1
+                if move:
+                    newtokens.insert(i, (MOVE, move))
         i += 1
 
     # Optimize scan loop
@@ -135,5 +130,9 @@ def optimize(tokens):
     # Optimize recursively
     if newtokens != tokens:
         return optimize(newtokens)
+
+    for i in newtokens:
+        print(i)
+    exit()
 
     return newtokens
