@@ -42,8 +42,7 @@ def optimize(tokens):
             newtokens.append((MOVE, move))
             move = 0
 
-        if token == ADD:
-            assert value[0] == 0
+        if token == ADD and value[0] == 0:
             add += value[1]
         elif token == MOVE:
             move += value
@@ -71,8 +70,9 @@ def optimize(tokens):
                     i -= 1
                 value = 0
                 # ADD after SET can be simplified to SET
-                if i<len(newtokens) and newtokens[i][0] == ADD:
-                    assert newtokens[i][1][0] == 0
+                if (i<len(newtokens) and 
+                        newtokens[i][0] == ADD and
+                        newtokens[i][1][0] == 0):
                     value = newtokens[i][1][1]
                     del newtokens[i]
                 newtokens.insert(i, (SET, (0, value)))
@@ -86,10 +86,9 @@ def optimize(tokens):
              newtokens[i+2][0] == MOVE):
 
             opp = newtokens[i+1][0] # SET or ADD
-            assert newtokens[i+1][1][0] == 0
             value = newtokens[i+1][1][1]
-            offset = newtokens[i][1]
-            move = offset + newtokens[i+2][1]
+            offset = newtokens[i+1][1][0] + newtokens[i][1]
+            move = offset + newtokens[i+2][1] - newtokens[i+1][1][0]
             del newtokens[i:i+3]
             newtokens.insert(i, (opp, (offset, value)))
             if move:
@@ -132,5 +131,9 @@ def optimize(tokens):
             del newtokens[i:i+3]
             newtokens.insert(i, (SCAN, offset))
         i += 1
+
+    # Optimize recursively
+    if newtokens != tokens:
+        return optimize(newtokens)
 
     return newtokens
