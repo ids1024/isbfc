@@ -53,9 +53,9 @@ def optimize(tokens):
     elif move:
         newtokens.append((MOVE, move))
 
-    # Optimize out clear loop / multiply move loop
     i = 0
     while i < len(newtokens):
+        # Optimize out clear loop / multiply move loop
         if newtokens[i][0] == LOOPSTART:
             j = i + 1
             adds = {}
