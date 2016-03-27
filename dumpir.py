@@ -10,7 +10,7 @@ def dumpir(code):
     tokens = optimize(tokens)
     for token, value in tokens:
         if token == OUTPUT:
-            print('output')
+            print('output(times=%d)' % value)
         elif token == INPUT:
             print('input')
         elif token == LOOP:

@@ -22,7 +22,7 @@ def interp(code):
         token, value = tokens[i]
 
         if token == OUTPUT:
-            print(chr(mem[cur]), end='')
+            print(value*chr(mem[cur]), end='')
         elif token == INPUT:
             mem[cur] == ord(getch.getch())
         elif token == MOVE:
