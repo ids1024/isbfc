@@ -120,12 +120,12 @@ _start:
                 addr = "$strbuff"
                 output += "    movq %r12, (strbuff)\n"
                 for i in range(1, times):
-                    output += "    movq %r12, (strbuff+" + str(i*8) + ")\n"
+                    output += "    movq %r12, (strbuff+" + str(i) + ")\n"
             output += """
     movq $1, %rax
     movq $1, %rdi
     movq """ + addr + """, %rsi
-    movq $1, %rdx
+    movq $""" + str(times) + """, %rdx
     syscall
 
 """
