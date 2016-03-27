@@ -135,8 +135,4 @@ def optimize(tokens):
     if newtokens != tokens:
         return optimize(newtokens)
 
-    for i in newtokens:
-        print(i)
-    exit()
-
     return newtokens
