@@ -77,30 +77,29 @@ _start:
         elif token == LOOP:
             loopnum += 1
             loops.append(loopnum)
-            output += "    test %r12, %r12\n" \
-                      "    jz endloop" + str(loopnum) + '\n' \
+            output += "    jmp endloop" + str(loopnum) + '\n' \
                       "    loop" + str(loopnum) + ":\n"
         elif token == ENDLOOP:
             loop = str(loops.pop())
-            output += "    test %r12, %r12\n" \
-                      "    jnz loop" + loop + '\n' \
-                      "    endloop" + loop + ':\n'
+            output += "    endloop" + loop + ':\n' \
+                      "    test %r12, %r12\n" \
+                      "    jnz loop" + loop + '\n'
         elif token == SCAN:
             # Slighly more optimal than normal loop and move
             loopnum += 1
 
-            output += "    test %r12, %r12\n" \
-                      "    jz endloop" + str(loopnum) + '\n' \
-                      "    movq %r12, (%rbx)\n" \
+            output += "    movq %r12, (%rbx)\n" \
+                      "    jmp endloop" + str(loopnum) + '\n' \
                       "    loop" + str(loopnum) + ":\n"
             if value > 0:
                 output += "    add $" + str(8*value) + ", %rbx\n"
             else:
                 output += "    sub $" + str(-8*value) + ", %rbx\n"
-            output += "    cmp $0, (%rbx)\n" \
+            output += "    endloop" + str(loopnum) + ':\n' \
+                      "    cmp $0, (%rbx)\n" \
                       "    jnz loop" + str(loopnum) + '\n' \
-                      "    movq (%rbx), %r12\n" \
-                      "    endloop" + str(loopnum) + ':\n'
+                      "    movq (%rbx), %r12\n"
+
         elif token == INPUT:
             output += """
     xor %rax, %rax
