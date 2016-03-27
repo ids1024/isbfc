@@ -16,7 +16,7 @@ def interp(code):
     loops = []
     mem = bytearray(BUFSIZE)
     cur = int(BUFSIZE/2)
-    skiploop = False
+    skiploop = 0
     while i < len(tokens)-1:
         #print("%d:%s cur:%d mem[cur]:%d" % (i, code[i], cur, mem[cur]))
         #print(loops)
@@ -24,7 +24,9 @@ def interp(code):
 
         if skiploop:
             if token == LOOPEND:
-                skiploop = False
+                skiploop -= 1
+            elif token == LOOPSTART:
+                skiploop += 1
             i += 1
             continue
 
@@ -54,7 +56,7 @@ def interp(code):
             if mem[cur]:
                 loops.append(i)
             else:
-                skiploop = True
+                skiploop = 1
         elif token == LOOPEND:
             if mem[cur]:
                 i = loops[-1]
