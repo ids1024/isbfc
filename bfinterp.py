@@ -25,6 +25,7 @@ def interp(code):
         if skiploop:
             if token == LOOPEND:
                 skiploop = False
+            i += 1
             continue
 
         if token == OUTPUT:
