@@ -4,7 +4,7 @@ import collections
 import getch
 
 from parser import parse, optimize
-from parser import OUTPUT, INPUT, LOOPSTART, LOOPEND, MOVE
+from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN
 
 BUFSIZE = 8192
@@ -43,7 +43,7 @@ def interp(code):
         elif token == SCAN:
             while mem[cur] != 0:
                 cur += value
-        elif token == LOOPSTART:
+        elif token == LOOP:
             if mem[cur]:
                 loops.append(i)
             else:
@@ -51,12 +51,12 @@ def interp(code):
                 while i < len(tokens)-1 and skiploop:
                     i += 1
                     token = tokens[i][0]
-                    if token == LOOPEND:
+                    if token == ENDLOOP:
                         skiploop -= 1
-                    elif token == LOOPSTART:
+                    elif token == LOOP:
                         skiploop += 1
 
-        elif token == LOOPEND:
+        elif token == ENDLOOP:
             if mem[cur]:
                 i = loops[-1]
             else:

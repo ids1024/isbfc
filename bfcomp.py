@@ -3,7 +3,7 @@ import os
 import subprocess
 
 from parser import parse, optimize
-from parser import OUTPUT, INPUT, LOOPSTART, LOOPEND, MOVE
+from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN
 
 BUFSIZE = 8192
@@ -72,13 +72,13 @@ _start:
                 else:
                     output += "    sub $" + str(-8*value) + ", %rbx\n"
                 output += "    movq (%rbx), %r12\n"
-        elif token == LOOPSTART:
+        elif token == LOOP:
             loopnum += 1
             loops.append(loopnum)
             output += "    cmp $0, %r12\n" \
                       "    jz endloop" + str(loopnum) + '\n' \
                       "    loop" + str(loopnum) + ":\n"
-        elif token == LOOPEND:
+        elif token == ENDLOOP:
             loop = str(loops.pop())
             output += "    cmp $0, %r12\n" \
                       "    jnz loop" + loop + '\n' \

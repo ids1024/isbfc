@@ -1,7 +1,7 @@
 OUTPUT=0
 INPUT=1
-LOOPSTART=2
-LOOPEND=3
+LOOP=2
+ENDLOOP=3
 MOVE=4
 ADD=5
 SET=6
@@ -21,9 +21,9 @@ def parse(code):
         elif i == '<':
             tokens.append((MOVE, -1))
         elif i == '[':
-            tokens.append((LOOPSTART, None))
+            tokens.append((LOOP, None))
         elif i == ']':
-            tokens.append((LOOPEND, None))
+            tokens.append((ENDLOOP, None))
         elif i == ',':
             tokens.append((INPUT, None))
         if i == '.':
@@ -56,10 +56,10 @@ def optimize(tokens):
     i = 0
     while i < len(newtokens):
         # Optimize out clear loop / multiply move loop
-        if newtokens[i][0] == LOOPSTART:
+        if newtokens[i][0] == LOOP:
             j = i + 1
             adds = {}
-            while j < len(newtokens) and newtokens[j][0] != LOOPEND:
+            while j < len(newtokens) and newtokens[j][0] != ENDLOOP:
                 if newtokens[j][0] != ADD:
                     break
                 offset, add = newtokens[j][1]
@@ -124,9 +124,9 @@ def optimize(tokens):
 
         # Optimize scan loop
         if (i < len(newtokens)-2 and
-             newtokens[i][0] == LOOPSTART and
+             newtokens[i][0] == LOOP and
              newtokens[i+1][0] == MOVE and
-             newtokens[i+2][0] == LOOPEND):
+             newtokens[i+2][0] == ENDLOOP):
 
             offset = newtokens[i+1][1]
             del newtokens[i:i+3]
