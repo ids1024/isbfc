@@ -56,10 +56,10 @@ def interp(code):
             else:
                 skiploop = True
         elif token == LOOPEND:
-            if mem[cur] == 0:
-                loops.pop()
-            else:
+            if mem[cur]:
                 i = loops[-1]
+            else:
+                loops.pop()
         else:
             raise ValueError('Token not handled')
 
