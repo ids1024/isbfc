@@ -32,11 +32,11 @@ _start:
             if value == 1 and dest == "%r12":
                 output += "    inc " + dest + "\n"
             elif value >= 1:
-                output += "    add $" + str(value) + ", " + dest + "\n"
+                output += "    addq $" + str(value) + ", " + dest + "\n"
             elif value == -1 and dest == "%r12":
                 output += "    dec " + dest + "\n"
             elif value <= -1:
-                output += "    sub $" + str(-value) + ", " + dest + "\n"
+                output += "    subq $" + str(-value) + ", " + dest + "\n"
         elif token == MULCOPY:
             src, dest, mul = value
             if src == 0:
@@ -51,12 +51,12 @@ _start:
             if mul not in (-1, 1):
                 output += "    movq " + src + ", %rax\n" \
                           "    movq $" + str(abs(mul)) + ", %rdx\n" \
-                          "    mul %rdx\n"
+                          "    mulq %rdx\n"
                 src = "%rax"
             if mul > 0:
-                output += "    add " + src + ", " + dest + "\n"
+                output += "    addq " + src + ", " + dest + "\n"
             else:
-                output += "    sub " + src + ", " + dest + "\n"
+                output += "    subq " + src + ", " + dest + "\n"
                 
         elif token == SET:
                 offset, value = value
@@ -70,9 +70,9 @@ _start:
             if value:
                 output += "    movq %r12, (%rbx)\n"
                 if value > 0:
-                    output += "    add $" + str(8*value) + ", %rbx\n"
+                    output += "    addq $" + str(8*value) + ", %rbx\n"
                 else:
-                    output += "    sub $" + str(-8*value) + ", %rbx\n"
+                    output += "    subq $" + str(-8*value) + ", %rbx\n"
                 output += "    movq (%rbx), %r12\n"
         elif token == LOOP:
             loopnum += 1
@@ -92,9 +92,9 @@ _start:
                       "    jmp endloop" + str(loopnum) + '\n' \
                       "    loop" + str(loopnum) + ":\n"
             if value > 0:
-                output += "    add $" + str(8*value) + ", %rbx\n"
+                output += "    addq $" + str(8*value) + ", %rbx\n"
             else:
-                output += "    sub $" + str(-8*value) + ", %rbx\n"
+                output += "    subq $" + str(-8*value) + ", %rbx\n"
             output += "    endloop" + str(loopnum) + ':\n' \
                       "    cmp $0, (%rbx)\n" \
                       "    jnz loop" + str(loopnum) + '\n' \
