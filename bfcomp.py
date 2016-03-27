@@ -12,6 +12,7 @@ def compile(code):
     tokens = parse(code)
     tokens = optimize(tokens)
     output = """.section .bss
+    .lcomm strbuff, 256
     .lcomm mem, """ + str(BUFSIZE) + """
     .set startidx, mem + """ + str(int(BUFSIZE/2)) + """
 .section .text
@@ -111,11 +112,19 @@ _start:
 
 """
         elif token == OUTPUT:
+            times = value
+            if times == 1:
+                addr = "%rbx"
+                output += "    movq %r12, (%rbx)\n"
+            else:
+                addr = "$strbuff"
+                output += "    movq %r12, (strbuff)\n"
+                for i in range(1, times):
+                    output += "    movq %r12, (strbuff+" + str(i*8) + ")\n"
             output += """
-    movq %r12, (%rbx)
     movq $1, %rax
     movq $1, %rdi
-    movq %rbx, %rsi
+    movq """ + addr + """, %rsi
     movq $1, %rdx
     syscall
 

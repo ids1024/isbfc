@@ -25,9 +25,9 @@ def parse(code):
         elif i == ']':
             tokens.append((ENDLOOP, None))
         elif i == ',':
-            tokens.append((INPUT, None))
+            tokens.append((INPUT, 1))
         if i == '.':
-            tokens.append((OUTPUT, None))
+            tokens.append((OUTPUT, 1))
     return tokens
 
 def optimize(tokens):
@@ -131,6 +131,15 @@ def optimize(tokens):
             offset = newtokens[i+1][1]
             del newtokens[i:i+3]
             newtokens.insert(i, (SCAN, offset))
+
+        if (i < len(newtokens)-1 and
+             newtokens[i][0] == OUTPUT and
+             newtokens[i+1][0] == OUTPUT):
+           
+            times = newtokens[i][1] + newtokens[i+1][1]
+            del newtokens[i:i+2]
+            newtokens.insert(i, (OUTPUT, times))
+
         i += 1
 
     # Optimize recursively
