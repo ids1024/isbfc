@@ -77,19 +77,19 @@ _start:
         elif token == LOOP:
             loopnum += 1
             loops.append(loopnum)
-            output += "    cmp $0, %r12\n" \
+            output += "    test %r12, %r12\n" \
                       "    jz endloop" + str(loopnum) + '\n' \
                       "    loop" + str(loopnum) + ":\n"
         elif token == ENDLOOP:
             loop = str(loops.pop())
-            output += "    cmp $0, %r12\n" \
+            output += "    test %r12, %r12\n" \
                       "    jnz loop" + loop + '\n' \
                       "    endloop" + loop + ':\n'
         elif token == SCAN:
             # Slighly more optimal than normal loop and move
             loopnum += 1
 
-            output += "    cmp $0, %r12\n" \
+            output += "    test %r12, %r12\n" \
                       "    jz endloop" + str(loopnum) + '\n' \
                       "    movq %r12, (%rbx)\n" \
                       "    loop" + str(loopnum) + ":\n"
