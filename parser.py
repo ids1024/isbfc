@@ -117,12 +117,10 @@ def optimize(tokens):
                     i += 1
                 if move:
                     newtokens.insert(i, (MOVE, move))
-        i += 1
 
-    # Optimize scan loop
-    i = 0
-    while i < len(newtokens)-2:
-        if (newtokens[i][0] == LOOPSTART and
+        # Optimize scan loop
+        if (i < len(newtokens)-2 and
+             newtokens[i][0] == LOOPSTART and
              newtokens[i+1][0] == MOVE and
              newtokens[i+2][0] == LOOPEND):
 
