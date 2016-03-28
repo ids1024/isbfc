@@ -89,14 +89,14 @@ def optimize(tokens):
                     # print("Warning: Infinite loop detected.")
                 elif len(adds) == 1:
                     newtokens2.append((SET, (0, 0)))
-                    i = j - 1
+                    i = j
                     optimized = True
                 elif adds[0] == -1:
                     for k, v in adds.items():
                         if k != 0:
                             newtokens2.append((MULCOPY, (0, k, v)))
                     newtokens2.append((SET, (0, 0)))
-                    i = j - 1
+                    i = j
                     optimized = True
 
         # SET + ADD = SET
@@ -141,7 +141,7 @@ def optimize(tokens):
                     newtokens2.append((opp, (offset+k, v)))
                 if move:
                     newtokens2.append((MOVE, move))
-                i = j - 1
+                i = j
                 optimized = True
 
         if (not optimized and
