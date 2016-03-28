@@ -5,7 +5,7 @@ import getch
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT
 
 BUFSIZE = 8192
 
@@ -16,13 +16,17 @@ def interp(code):
     loops = []
     mem = bytearray(BUFSIZE)
     cur = int(BUFSIZE/2)
+    outbuff = ''
     while i < len(tokens)-1:
         #print("%d:%s cur:%d mem[cur]:%d" % (i, code[i], cur, mem[cur]))
         #print(loops)
         token, value = tokens[i]
 
         if token == OUTPUT:
-            print(value*chr(mem[cur]), end='')
+            print(outbuff, end='')
+            outbuff = ''
+        elif token == LOADOUT:
+            outbuff += chr(mem[cur] + value)
         elif token == INPUT:
             mem[cur] == ord(getch.getch())
         elif token == MOVE:

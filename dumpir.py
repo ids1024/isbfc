@@ -9,7 +9,7 @@ def dumpir(code):
     tokens = parse(code)    
     tokens = optimize(tokens)
     for token, value in tokens:
-        elif token == INPUT:
+        if token == INPUT:
             print('input')
         elif token == LOOP:
             print('loop')
