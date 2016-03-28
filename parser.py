@@ -182,26 +182,28 @@ def optimize(tokens):
             commands = []
             j = i + 1
             while j < len(newtokens) and newtokens[j][0] != MOVE:
-                if newtokens[j][0] in (SET, ADD):
-                    offset, val = newtokens[j][1]
-                    # ADD/SET then SET does nothing; remove it
-                    if offset in ops and newtokens[j][0] == SET:
-                        ops.pop(offset)
-                        vals.pop(offset)
-                    if offset not in ops:
-                        ops[offset] = newtokens[j][0] # SET or ADD
-                    vals[offset] = vals.get(offset, 0) + val
-                elif newtokens[j][0] in (IF, ENDIF):
+                token, value = newtokens[j]
+                if token not in (SET, ADD):
                     for k, v in vals.items():
                         opp = ops[k]
                         commands.append((opp, (shift+k, v)))
                     vals.clear()
                     ops.clear()
-                    if newtokens[j][0] == IF:
-                        offset = shift + newtokens[j][1]
-                        commands.append((IF, offset))
-                    elif newtokens[j][0] == ENDIF:
-                        commands.append((ENDIF, None))
+
+                if token in (SET, ADD):
+                    offset, val = value
+                    # ADD/SET then SET does nothing; remove it
+                    if offset in ops and token == SET:
+                        ops.pop(offset)
+                        vals.pop(offset)
+                    if offset not in ops:
+                        ops[offset] = token # SET or ADD
+                    vals[offset] = vals.get(offset, 0) + val
+                elif token == IF:
+                    offset = shift + value
+                    commands.append((IF, offset))
+                elif token == ENDIF:
+                    commands.append((ENDIF, None))
                 else:
                     break
                 j += 1
