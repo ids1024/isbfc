@@ -158,8 +158,7 @@ def optimize(tokens):
         # Optimize ADD/MOVE + OUTPUT + ADD/MOVE
         if (not optimized and
              i < len(newtokens)-2 and
-             newtokens[i][0] in (ADD, MOVE, SET) and
-             newtokens[i][0] in (LOADOUT, LOADOUTSET)):
+             newtokens[i][0] in (ADD, MOVE, SET)):
             j = i
             outputs = []
             adds = {}
