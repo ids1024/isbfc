@@ -100,10 +100,10 @@ _start:
         elif token == IF:
             ifnum += 1
             ifs.append(ifnum)
-            if offset == 0:
+            if value == 0:
                 output += "    test %r12, %r12\n"
             else:
-                output += "    cmp $0, " + str(8*value) + "(%rbx)\n"
+                output += "    cmpq $0, " + str(8*value) + "(%rbx)\n"
             output += "    jz endif" + str(ifnum) + '\n'
         elif token == ENDIF:
             output += "    endif" + str(ifs.pop()) + ':\n'

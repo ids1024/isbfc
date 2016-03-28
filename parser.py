@@ -170,33 +170,47 @@ def optimize(tokens):
             i = j - 1
             optimized = True
 
-        # Optimize MOVE + (SET/ADD) + MOVE -> (SET/ADD) + MOVE
+        # Optimize MOVE + (SET/ADD/IF) + MOVE -> (SET/ADD/IF) + MOVE
         if (not optimized and
              i < len(newtokens)-2 and
              newtokens[i][0] == MOVE and
-             newtokens[i+1][0] in (SET, ADD)):
+             newtokens[i+1][0] in (SET, ADD, IF)):
 
+            shift = newtokens[i][1]
             vals = {}
             ops = {}
+            commands = []
             j = i + 1
             while j < len(newtokens) and newtokens[j][0] != MOVE:
-                if newtokens[j][0] not in (SET, ADD):
+                if newtokens[j][0] in (SET, ADD):
+                    offset, val = newtokens[j][1]
+                    # ADD/SET then SET does nothing; remove it
+                    if offset in ops and newtokens[j][0] == SET:
+                        ops.pop(offset)
+                        vals.pop(offset)
+                    if offset not in ops:
+                        ops[offset] = newtokens[j][0] # SET or ADD
+                    vals[offset] = vals.get(offset, 0) + val
+                elif newtokens[j][0] in (IF, ENDIF):
+                    for k, v in vals.items():
+                        opp = ops[k]
+                        commands.append((opp, (shift+k, v)))
+                    vals.clear()
+                    ops.clear()
+                    if newtokens[j][0] == IF:
+                        offset = shift + newtokens[j][1]
+                        commands.append((IF, offset))
+                    elif newtokens[j][0] == ENDIF:
+                        commands.append((ENDIF, None))
+                else:
                     break
-                offset, val = newtokens[j][1]
-                # ADD/SET then SET does nothing; remove it
-                if offset in ops and newtokens[j][0] == SET:
-                    ops.pop(offset)
-                    vals.pop(offset)
-                if offset not in ops:
-                    ops[offset] = newtokens[j][0] # SET or ADD
-                vals[offset] = vals.get(offset, 0) + val
                 j += 1
             else:
-                offset = newtokens[i][1]
-                move = offset + newtokens[j][1]
+                move = shift + newtokens[j][1]
+                newtokens2.extend(commands)
                 for k, v in vals.items():
                     opp = ops[k]
-                    newtokens2.append((opp, (offset+k, v)))
+                    newtokens2.append((opp, (shift+k, v)))
                 if move:
                     newtokens2.append((MOVE, move))
                 i = j
