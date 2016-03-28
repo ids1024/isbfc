@@ -183,8 +183,8 @@ def optimize(tokens):
                 if newtokens[j][0] not in (SET, ADD):
                     break
                 offset, val = newtokens[j][1]
-                # ADD then SET does nothing; remove it
-                if ops.get(offset) == ADD and newtokens[j][0] == SET:
+                # ADD/SET then SET does nothing; remove it
+                if offset in ops and newtokens[j][0] == SET:
                     ops.pop(offset)
                     vals.pop(offset)
                 if offset not in ops:
