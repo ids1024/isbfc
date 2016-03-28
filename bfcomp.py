@@ -25,7 +25,7 @@ _start:
     loopnum = 0
     outbuffpos = 0
     outbuffsize = 0
-    for token, value in tokens:
+    for i, (token, value) in enumerate(tokens):
         if token == ADD:
             offset, value = value
             if offset == 0:
@@ -76,7 +76,10 @@ _start:
                     output += "    addq $" + str(8*value) + ", %rbx\n"
                 else:
                     output += "    subq $" + str(-8*value) + ", %rbx\n"
-                output += "    movq (%rbx), %r12\n"
+                # As a small optimization, this command is not needed
+                # when MOVE is followed by SET
+                if not (i < (len(tokens) - 1) and (tokens[i+1][0] == SET)):
+                    output += "    movq (%rbx), %r12\n"
         elif token == LOOP:
             loopnum += 1
             loops.append(loopnum)
