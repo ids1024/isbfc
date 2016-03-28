@@ -56,10 +56,25 @@ def optimize(tokens):
     elif move:
         newtokens.append((MOVE, move))
 
+    newtokens2 = []
+
     i = 0
     while i < len(newtokens):
+        optimized = False
+
+        # Optimize scan loop
+        if (i < len(newtokens)-2 and
+             newtokens[i][0] == LOOP and
+             newtokens[i+1][0] == MOVE and
+             newtokens[i+2][0] == ENDLOOP):
+
+            offset = newtokens[i+1][1]
+            newtokens2.append((SCAN, offset))
+            optimized = True
+            i += 2
+
         # Optimize out clear loop / multiply move loop
-        if newtokens[i][0] == LOOP:
+        if not optimized and newtokens[i][0] == LOOP:
             j = i + 1
             adds = {}
             while j < len(newtokens) and newtokens[j][0] != ENDLOOP:
@@ -73,29 +88,33 @@ def optimize(tokens):
                     pass
                     # print("Warning: Infinite loop detected.")
                 elif len(adds) == 1:
-                    del newtokens[i:j+1]
-                    newtokens.insert(i, (SET, (0, 0)))
+                    newtokens2.append((SET, (0, 0)))
+                    i = j - 1
+                    optimized = True
                 elif adds[0] == -1:
-                    del adds[0]
-                    del newtokens[i:j+1]
                     for k, v in adds.items():
-                        newtokens.insert(i, (MULCOPY, (0, k, v)))
-                        i += 1
-                    newtokens.insert(i, (SET, (0, 0)))
+                        if k != 0:
+                            newtokens2.append((MULCOPY, (0, k, v)))
+                    newtokens2.append((SET, (0, 0)))
+                    i = j - 1
+                    optimized = True
 
         # SET + ADD = SET
-        if (i < len(newtokens)-1 and
+        if (not optimized and
+             i < len(newtokens)-1 and
              newtokens[i][0] == SET and
              newtokens[i+1][0] == ADD and
              newtokens[i][1][0] == newtokens[i+1][1][0]):
 
             offset = newtokens[i][1][0]
             value = newtokens[i][1][1] + newtokens[i+1][1][1]
-            del newtokens[i:i+2]
-            newtokens.insert(i, (SET, (offset, value)))
+            newtokens2.append((SET, (offset, value)))
+            i += 1
+            optimized = True
 
         # Optimize MOVE + (SET/ADD) + MOVE -> (SET/ADD) + MOVE
-        if (i < len(newtokens)-2 and
+        if (not optimized and
+             i < len(newtokens)-2 and
              newtokens[i][0] == MOVE and
              newtokens[i+1][0] in (SET, ADD)):
 
@@ -117,34 +136,30 @@ def optimize(tokens):
             else:
                 offset = newtokens[i][1]
                 move = offset + newtokens[j][1]
-                del newtokens[i:j+1]
                 for k, v in vals.items():
                     opp = ops[k]
-                    newtokens.insert(i, (opp, (offset+k, v)))
-                    i += 1
+                    newtokens2.append((opp, (offset+k, v)))
                 if move:
-                    newtokens.insert(i, (MOVE, move))
+                    newtokens2.append((MOVE, move))
+                i = j - 1
+                optimized = True
 
-        # Optimize scan loop
-        if (i < len(newtokens)-2 and
-             newtokens[i][0] == LOOP and
-             newtokens[i+1][0] == MOVE and
-             newtokens[i+2][0] == ENDLOOP):
-
-            offset = newtokens[i+1][1]
-            del newtokens[i:i+3]
-            newtokens.insert(i, (SCAN, offset))
-
-        if (i < len(newtokens)-2 and
+        if (not optimized and
+             i < len(newtokens)-2 and
              newtokens[i][0] in (LOADOUT, LOADOUTSET) and
              newtokens[i+1][0] == OUTPUT and
              newtokens[i+2][0] in (LOADOUT, LOADOUTSET)):
            
-            del newtokens[i+1]
+            newtokens2.append(newtokens[i])
+            newtokens2.append(newtokens[i+2])
+            i += 2
+            optimized = True
 
         # Optimize ADD/MOVE + OUTPUT + ADD/MOVE
-        if (i < len(newtokens)-2 and
-             newtokens[i][0] in (ADD, MOVE, SET)):
+        if (not optimized and
+             i < len(newtokens)-2 and
+             newtokens[i][0] in (ADD, MOVE, SET) and
+             newtokens[i][0] in (LOADOUT, LOADOUTSET)):
             j = i
             outputs = []
             adds = {}
@@ -182,31 +197,31 @@ def optimize(tokens):
                     break
                 j += 1
             if (adds or shifted or sets) and outputs:
-                del newtokens[i:j+1]
                 for offset, add, _set in outputs:
                     if _set is not None:
-                        newtokens.insert(i, (LOADOUTSET, _set))
+                        newtokens2.append((LOADOUTSET, _set))
                     else:
-                        newtokens.insert(i, (LOADOUT, (offset, add)))
-                    i += 1
-                newtokens.insert(i, (OUTPUT, None))
-                i += 1
+                        newtokens2.append((LOADOUT, (offset, add)))
+                newtokens2.append((OUTPUT, None))
                 for offset, val in sets.items():
                     val = val + adds.get(offset, 0)
-                    newtokens.insert(i, (SET, (offset, val)))
-                    i += 1
+                    newtokens2.append((SET, (offset, val)))
                 for offset, add in adds.items():
                     if add and (offset not in sets):
-                        newtokens.insert(i, (ADD, (offset, add)))
-                        i += 1
+                        newtokens2.append((ADD, (offset, add)))
                 if shift:
-                    newtokens.insert(i, (MOVE, shift))
-                    i += 1
+                    newtokens2.append((MOVE, shift))
+                i = j
+                optimized = True
+
+        if not optimized:
+            newtokens2.append(newtokens[i])
 
         i += 1
 
     # Optimize recursively
-    if newtokens != tokens:
-        return optimize(newtokens)
+    print(1)
+    if newtokens2 != tokens:
+        return optimize(newtokens2)
 
-    return newtokens
+    return newtokens2
