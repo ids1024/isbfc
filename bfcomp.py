@@ -100,8 +100,11 @@ _start:
         elif token == IF:
             ifnum += 1
             ifs.append(ifnum)
-            output += "    test %r12, %r12\n" \
-                      "    jz endif" + str(ifnum) + '\n'
+            if offset == 0:
+                output += "    test %r12, %r12\n"
+            else:
+                output += "    cmp $0, " + str(8*value) + "(%rbx)\n"
+            output += "    jz endif" + str(ifnum) + '\n'
         elif token == ENDIF:
             output += "    endif" + str(ifs.pop()) + ':\n'
         elif token == SCAN:

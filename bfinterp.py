@@ -67,7 +67,7 @@ def interp(code):
                     elif token == LOOP:
                         skiploop += 1
         elif token == IF:
-            if not mem[cur]:
+            if not mem[cur+value]:
                 skipif = 1
                 while i < len(tokens)-1 and skipif:
                     i += 1

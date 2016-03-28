@@ -17,7 +17,7 @@ def dumpir(code):
         elif token == ENDLOOP:
             print('endloop')
         elif token == IF:
-            print('if')
+            print('if(offset=%d)' % value)
         elif token == ENDIF:
             print('endif')
         elif token == MOVE:
