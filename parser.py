@@ -160,7 +160,7 @@ def optimize(tokens):
                     j -= 1
                     break
                 j += 1
-            if adds and outputs:
+            if adds and len(outputs) > 1:
                 del newtokens[i:j+1]
                 for add in outputs:
                     newtokens.insert(i, (LOADOUT, add))
