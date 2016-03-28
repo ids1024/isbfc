@@ -59,6 +59,10 @@ _start:
                           "    movq $" + str(abs(mul)) + ", %rdx\n" \
                           "    mulq %rdx\n"
                 src = "%rax"
+            elif "%r12" not in (src, dest):
+                # x86 cannot move memory to memory
+                output += "    movq " + src + ", %rax\n"
+                src = "%rax"
             if mul > 0:
                 output += "    addq " + src + ", " + dest + "\n"
             else:
