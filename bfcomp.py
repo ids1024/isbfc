@@ -5,6 +5,7 @@ import subprocess
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
+from parser import IF, ENDIF
 
 BUFSIZE = 8192
 
@@ -22,7 +23,9 @@ _start:
     movq $startidx, %rbx
 """
     loops = []
+    ifs = []
     loopnum = 0
+    ifnum = 0
     outbuffpos = 0
     outbuffsize = 0
     for i, (token, value) in enumerate(tokens):
@@ -90,6 +93,13 @@ _start:
             output += "    endloop" + loop + ':\n' \
                       "    test %r12, %r12\n" \
                       "    jnz loop" + loop + '\n'
+        elif token == IF:
+            ifnum += 1
+            ifs.append(ifnum)
+            output += "    test %r12, %r12\n" \
+                      "    jz endif" + str(ifnum) + '\n'
+        elif token == ENDIF:
+            output += "    endif" + str(ifs.pop()) + ':\n'
         elif token == SCAN:
             # Slighly more optimal than normal loop and move
             loopnum += 1

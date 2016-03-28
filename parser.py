@@ -9,6 +9,8 @@ MULCOPY=7
 SCAN=8
 LOADOUT=9
 LOADOUTSET=10
+IF=11
+ENDIF=12
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -77,11 +79,21 @@ def optimize(tokens):
         if not optimized and newtokens[i][0] == LOOP:
             j = i + 1
             adds = {}
+            sets = {}
             while j < len(newtokens) and newtokens[j][0] != ENDLOOP:
-                if newtokens[j][0] != ADD:
+                if newtokens[j][0] == ADD:
+                    offset, add = newtokens[j][1]
+                    if offset in sets:
+                        sets[offset] += add
+                    else:
+                        adds[offset] = adds.get(offset, 0) + add
+                elif newtokens[j][0] == SET and newtokens[j][1][0] != 0:
+                    offset, val = newtokens[j][1]
+                    if offset in adds:
+                        del adds[offset]
+                    sets[offset] = val
+                else:
                     break
-                offset, add = newtokens[j][1]
-                adds[offset] = adds.get(offset, 0) + add
                 j += 1
             else:
                 if 0 not in adds:
@@ -89,12 +101,23 @@ def optimize(tokens):
                     # print("Warning: Infinite loop detected.")
                 elif len(adds) == 1:
                     newtokens2.append((SET, (0, 0)))
+                    if sets:
+                        newtokens2.append((IF, None))
+                        for offset, val in sets.items():
+                            newtokens2.append((SET, (offset, val)))
+                        newtokens2.append((ENDIF, None))
                     i = j
                     optimized = True
                 elif adds[0] == -1:
+                    if sets:
+                        newtokens2.append((IF, None))
+                        for offset, val in sets.items():
+                            newtokens2.append((SET, (offset, val)))
                     for k, v in adds.items():
                         if k != 0:
                             newtokens2.append((MULCOPY, (0, k, v)))
+                    if sets:
+                        newtokens2.append((ENDIF, None))
                     newtokens2.append((SET, (0, 0)))
                     i = j
                     optimized = True

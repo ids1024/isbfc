@@ -11,6 +11,7 @@ import getch
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
+from parser import IF, ENDIF
 
 BUFSIZE = 8192
 
@@ -67,12 +68,23 @@ def interp(code):
                         skiploop -= 1
                     elif token == LOOP:
                         skiploop += 1
-
+        elif token == IF:
+            if not mem[cur]:
+                skipif = 1
+                while i < len(tokens)-1 and skipif:
+                    i += 1
+                    token = tokens[i][0]
+                    if token == ENDIF:
+                        skipif -= 1
+                    elif token == IF:
+                        skipif += 1
         elif token == ENDLOOP:
             if mem[cur]:
                 i = loops[-1]
             else:
                 loops.pop()
+        elif token == ENDIF:
+            pass
         else:
             raise ValueError('Token not handled')
 

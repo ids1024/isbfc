@@ -3,6 +3,7 @@ import sys
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
+from parser import IF, ENDIF
 
 
 def dumpir(code):
@@ -15,6 +16,10 @@ def dumpir(code):
             print('loop')
         elif token == ENDLOOP:
             print('endloop')
+        elif token == IF:
+            print('if')
+        elif token == ENDIF:
+            print('endif')
         elif token == MOVE:
             print('move(offset=%d)' % value)
         elif token == ADD:
