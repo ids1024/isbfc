@@ -1,3 +1,6 @@
+# NOTE: This may not properly/at all. The compiler
+# is the focus.
+
 import sys
 import collections
 
@@ -26,7 +29,8 @@ def interp(code):
             print(outbuff, end='')
             outbuff = ''
         elif token == LOADOUT:
-            outbuff += chr(mem[cur] + value)
+            offset, add = value
+            outbuff += chr((mem[cur+offset] + add)%256)
         elif token == INPUT:
             mem[cur] == ord(getch.getch())
         elif token == MOVE:

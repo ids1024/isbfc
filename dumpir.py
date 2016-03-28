@@ -26,7 +26,7 @@ def dumpir(code):
         elif token == SCAN:
             print('scan(offset=%d)' % value)
         elif token == LOADOUT:
-            print('loadout(add=%d)' % value)
+            print('loadout(offset=%d, add=%d)' % value)
         elif token == OUTPUT:
             print('output')
         else:

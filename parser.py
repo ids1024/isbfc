@@ -28,7 +28,7 @@ def parse(code):
         elif i == ',':
             tokens.append((INPUT, 1))
         if i == '.':
-            tokens.append((LOADOUT, 0))
+            tokens.append((LOADOUT, (0, 0)))
             tokens.append((OUTPUT, None))
     return tokens
 
@@ -141,29 +141,36 @@ def optimize(tokens):
            
             del newtokens[i+1]
 
-        # Optimize ADD + OUTPUT + ADD
+        # Optimize ADD/MOVE + OUTPUT + ADD/MOVE
         if (i < len(newtokens)-2 and
-             newtokens[i][0] == ADD):
+             newtokens[i][0] in (ADD, MOVE)):
             j = i
             outputs = []
             adds = {}
+            shift = 0
+            shifted = False
             while j < len(newtokens):
                 if newtokens[j][0] == ADD:
                     offset, val = newtokens[j][1]
+                    offset += shift
                     adds[offset] = adds.get(offset, 0) + val
                 elif newtokens[j][0] == LOADOUT:
-                    add = newtokens[j][1]
-                    outputs.append(adds.get(0, 0) + add)
+                    offset, add = newtokens[j][1]
+                    offset += shift
+                    outputs.append((offset, adds.get(offset, 0) + add))
+                elif newtokens[j][0] == MOVE:
+                    shift += newtokens[j][1]
+                    shifted = True
                 elif newtokens[j][0] == OUTPUT:
                     pass
                 else:
                     j -= 1
                     break
                 j += 1
-            if adds and len(outputs) > 1:
+            if (adds or shifted) and outputs:
                 del newtokens[i:j+1]
-                for add in outputs:
-                    newtokens.insert(i, (LOADOUT, add))
+                for offset, add in outputs:
+                    newtokens.insert(i, (LOADOUT, (offset, add)))
                     i += 1
                 newtokens.insert(i, (OUTPUT, None))
                 i += 1
@@ -171,6 +178,9 @@ def optimize(tokens):
                     if add:
                         newtokens.insert(i, (ADD, (offset, add)))
                         i += 1
+                if shift:
+                    newtokens.insert(i, (MOVE, shift))
+                    i += 1
 
         i += 1
 

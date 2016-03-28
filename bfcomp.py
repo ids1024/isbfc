@@ -113,9 +113,13 @@ _start:
 
 """
         elif token == LOADOUT:
-            add = value
+            offset, add = value
             outaddr = "(strbuff+" + str(outbuffpos) + ")"
-            output += "    movq %r12, " + outaddr + "\n"
+            if offset == 0:
+                output += "    movq %r12, " + outaddr + "\n"
+            else:
+                output += "    movq " + str(8*offset) + "(%rbx), %rax\n"
+                output += "    movq %rax, " + outaddr + "\n"
             if add > 0:
                 output += "    addb $" + str(add) + ", " + outaddr + "\n"
             elif add < 0:
