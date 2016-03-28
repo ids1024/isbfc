@@ -39,6 +39,7 @@ def optimize(tokens):
     add = 0
     move = 0
     newtokens = []
+    allzero = True
     for token, value in tokens:
         if add and token != ADD:
             newtokens.append((ADD, (0, add)))
@@ -48,19 +49,28 @@ def optimize(tokens):
             move = 0
 
         if token == ADD and value[0] == 0:
-            add += value[1]
+            #TODO: Optimization could still be extended
+            if allzero:
+                newtokens.append((SET, value))
+            else:
+                add += value[1]
+        elif token == ADD and allzero:
+            newtokens.append((SET, value))
+        elif token == LOADOUT and allzero:
+            offset, add = value
+            newtokens.append((LOADOUTSET, add))
         elif token == MOVE:
             move += value
         else:
             newtokens.append((token, value))
+
+        #NOTE: Must be updated for new tokens
+        if token in (ADD, SET, INPUT):
+            allzero = False
     if add:
         newtokens.append((ADD, (0, add)))
     elif move:
         newtokens.append((MOVE, move))
-
-    # TODO: More optimizations of this kind
-    if newtokens[0][0] == ADD:
-        newtokens[0] = (SET, newtokens[0][1])
 
     newtokens2 = []
 
