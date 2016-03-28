@@ -58,6 +58,10 @@ def optimize(tokens):
     elif move:
         newtokens.append((MOVE, move))
 
+    # TODO: More optimizations of this kind
+    if newtokens[0][0] == ADD:
+        newtokens[0] = (SET, newtokens[0][1])
+
     newtokens2 = []
 
     i = 0
@@ -134,6 +138,26 @@ def optimize(tokens):
             value = newtokens[i][1][1] + newtokens[i+1][1][1]
             newtokens2.append((SET, (offset, value)))
             i += 1
+            optimized = True
+
+        # SET + MULCOPY = SET + ADD
+        if (not optimized and
+             i < len(newtokens)-1 and
+             newtokens[i][0] == SET and
+             newtokens[i+1][0] == MULCOPY and
+             newtokens[i][1][0] == newtokens[i+1][1][0]):
+
+            offset, value = newtokens[i][1]
+            j = i+1
+            while (j < len(newtokens)-1 and
+                   newtokens[j][0] == MULCOPY and
+                   newtokens[j][1][0] == offset):
+                src, dest, mul = newtokens[j][1]
+                newtokens2.append((ADD, (dest, value*mul)))
+                j += 1
+
+            newtokens2.append((SET, (offset, value)))
+            i = j - 1
             optimized = True
 
         # Optimize MOVE + (SET/ADD) + MOVE -> (SET/ADD) + MOVE
