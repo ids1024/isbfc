@@ -2,7 +2,7 @@ import sys
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, OUTPUTBUFF
 
 
 def dumpir(code):
@@ -27,6 +27,10 @@ def dumpir(code):
             print('mulcopy(src=%d, dest=%d, mul=%d)' % value)
         elif token == SCAN:
             print('scan(offset=%d)' % value)
+        elif token == LOADOUT:
+            print('loadout(add=%d)' % value)
+        elif token == OUTPUTBUFF:
+            print('outputbuff')
         else:
             print('TOKEN', i, 'NOT HANDLED')
 

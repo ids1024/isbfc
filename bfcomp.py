@@ -4,7 +4,7 @@ import subprocess
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, OUTPUTBUFF
 
 BUFSIZE = 8192
 
@@ -23,6 +23,7 @@ _start:
 """
     loops = []
     loopnum = 0
+    outbuffpos = 0
     for token, value in tokens:
         if token == ADD:
             offset, value = value
@@ -129,6 +130,26 @@ _start:
     syscall
 
 """
+        elif token == LOADOUT:
+            add = value
+            outaddr = "(strbuff+" + str(outbuffpos) + ")"
+            output += "    movq %r12, " + outaddr + "\n"
+            if add > 0:
+                output += "    addb $" + str(add) + ", " + outaddr + "\n"
+            elif add < 0:
+                output += "    subb $" + str(-add) + ", " + outaddr + "\n"
+            outbuffpos += 1
+
+        elif token == OUTPUTBUFF:
+            output += """
+    movq $1, %rax
+    movq $1, %rdi
+    movq $strbuff, %rsi
+    movq $""" + str(outbuffpos) + """, %rdx
+    syscall
+
+"""
+            outbuffpos = 0
 
     # Exit syscall
     output += """

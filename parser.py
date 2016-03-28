@@ -7,6 +7,8 @@ ADD=5
 SET=6
 MULCOPY=7
 SCAN=8
+LOADOUT=9
+OUTPUTBUFF=10
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -139,6 +141,36 @@ def optimize(tokens):
             times = newtokens[i][1] + newtokens[i+1][1]
             del newtokens[i:i+2]
             newtokens.insert(i, (OUTPUT, times))
+
+        # Optimize ADD + OUTPUT + ADD
+        if (i < len(newtokens)-2 and
+             newtokens[i][0] == ADD):
+            j = i
+            outputs = []
+            adds = {}
+            while j < len(newtokens):
+                if newtokens[j][0] == ADD:
+                    offset, val = newtokens[j][1]
+                    adds[offset] = adds.get(offset, 0) + val
+                elif newtokens[j][0] == OUTPUT:
+                    times = newtokens[j][1]
+                    for _ in range(times):
+                        outputs.append(adds.get(0, 0))
+                else:
+                    j -= 1
+                    break
+                j += 1
+            if adds and outputs:
+                del newtokens[i:j+1]
+                for add in outputs:
+                    newtokens.insert(i, (LOADOUT, add))
+                    i += 1
+                newtokens.insert(i, (OUTPUTBUFF, None))
+                i += 1
+                for offset, add in adds.items():
+                    if add:
+                        newtokens.insert(i, (ADD, (offset, add)))
+                        i += 1
 
         i += 1
 
