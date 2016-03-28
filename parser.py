@@ -219,7 +219,6 @@ def optimize(tokens):
         i += 1
 
     # Optimize recursively
-    print(1)
     if newtokens2 != tokens:
         return optimize(newtokens2)
 
