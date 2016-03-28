@@ -100,11 +100,12 @@ def optimize(tokens):
                     pass
                     # print("Warning: Infinite loop detected.")
                 elif len(adds) == 1:
-                    newtokens2.append((SET, (0, 0)))
                     if sets:
                         newtokens2.append((IF, None))
                         for offset, val in sets.items():
                             newtokens2.append((SET, (offset, val)))
+                    newtokens2.append((SET, (0, 0)))
+                    if sets:
                         newtokens2.append((ENDIF, None))
                     i = j
                     optimized = True
