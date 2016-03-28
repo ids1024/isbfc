@@ -179,7 +179,7 @@ def optimize(tokens):
             i += 2
             optimized = True
 
-        # Optimize ADD/MOVE + OUTPUT + ADD/MOVE
+        # Optimize ADD/SET/MOVE + OUTPUT + ADD/SET/MOVE
         if (not optimized and
              i < len(newtokens)-2 and
              newtokens[i][0] in (ADD, MOVE, SET)):
