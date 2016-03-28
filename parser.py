@@ -170,11 +170,12 @@ def optimize(tokens):
             i = j - 1
             optimized = True
 
-        # Optimize MOVE + (SET/ADD/IF) + MOVE -> (SET/ADD/IF) + MOVE
+        # Optimize MOVE + (SET/ADD/MULCOPY/IF) +
+        #     MOVE -> (SET/ADD/MULCOPY/IF) + MOVE
         if (not optimized and
              i < len(newtokens)-2 and
              newtokens[i][0] == MOVE and
-             newtokens[i+1][0] in (SET, ADD, IF)):
+             newtokens[i+1][0] in (SET, ADD, MULCOPY, IF)):
 
             shift = newtokens[i][1]
             vals = {}
@@ -199,6 +200,9 @@ def optimize(tokens):
                     if offset not in ops:
                         ops[offset] = token # SET or ADD
                     vals[offset] = vals.get(offset, 0) + val
+                elif token == MULCOPY:
+                    src, dest, mul = value
+                    commands.append((MULCOPY, (src+shift, dest+shift, mul)))
                 elif token == IF:
                     offset = shift + value
                     commands.append((IF, offset))
