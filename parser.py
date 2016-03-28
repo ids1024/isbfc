@@ -8,6 +8,7 @@ SET=6
 MULCOPY=7
 SCAN=8
 LOADOUT=9
+LOADOUTSET=10
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -135,18 +136,19 @@ def optimize(tokens):
             newtokens.insert(i, (SCAN, offset))
 
         if (i < len(newtokens)-2 and
-             newtokens[i][0] == LOADOUT and
+             newtokens[i][0] in (LOADOUT, LOADOUTSET) and
              newtokens[i+1][0] == OUTPUT and
-             newtokens[i+2][0] == LOADOUT):
+             newtokens[i+2][0] in (LOADOUT, LOADOUTSET)):
            
             del newtokens[i+1]
 
         # Optimize ADD/MOVE + OUTPUT + ADD/MOVE
         if (i < len(newtokens)-2 and
-             newtokens[i][0] in (ADD, MOVE)):
+             newtokens[i][0] in (ADD, MOVE, SET)):
             j = i
             outputs = []
             adds = {}
+            sets = {}
             shift = 0
             shifted = False
             while j < len(newtokens):
@@ -154,10 +156,22 @@ def optimize(tokens):
                     offset, val = newtokens[j][1]
                     offset += shift
                     adds[offset] = adds.get(offset, 0) + val
+                elif newtokens[j][0] == SET:
+                    offset, val = newtokens[j][1]
+                    offset += shift
+                    adds[offset] = 0
+                    sets[offset] = val
                 elif newtokens[j][0] == LOADOUT:
                     offset, add = newtokens[j][1]
                     offset += shift
-                    outputs.append((offset, adds.get(offset, 0) + add))
+                    if offset in sets:
+                        val = sets[offset] + adds.get(offset, 0) + add
+                        outputs.append((None, None, val))
+                    else:
+                        outputs.append((offset, adds.get(offset, 0) + add, None))
+                elif newtokens[j][0] == LOADOUTSET:
+                    value = newtokens[j][1]
+                    outputs.append((None, None, value))
                 elif newtokens[j][0] == MOVE:
                     shift += newtokens[j][1]
                     shifted = True
@@ -167,15 +181,22 @@ def optimize(tokens):
                     j -= 1
                     break
                 j += 1
-            if (adds or shifted) and outputs:
+            if (adds or shifted or sets) and outputs:
                 del newtokens[i:j+1]
-                for offset, add in outputs:
-                    newtokens.insert(i, (LOADOUT, (offset, add)))
+                for offset, add, _set in outputs:
+                    if _set is not None:
+                        newtokens.insert(i, (LOADOUTSET, _set))
+                    else:
+                        newtokens.insert(i, (LOADOUT, (offset, add)))
                     i += 1
                 newtokens.insert(i, (OUTPUT, None))
                 i += 1
+                for offset, val in sets.items():
+                    val = val + adds.get(offset, 0)
+                    newtokens.insert(i, (SET, (offset, val)))
+                    i += 1
                 for offset, add in adds.items():
-                    if add:
+                    if add and (offset not in sets):
                         newtokens.insert(i, (ADD, (offset, add)))
                         i += 1
                 if shift:

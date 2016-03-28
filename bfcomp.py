@@ -4,7 +4,7 @@ import subprocess
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN, LOADOUT
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
 
 BUFSIZE = 8192
 
@@ -12,7 +12,7 @@ def compile(code):
     tokens = parse(code)
     tokens = optimize(tokens)
     output = """.section .bss
-    .lcomm strbuff, 256
+    .lcomm strbuff, {outbuffsize}
     .lcomm mem, """ + str(BUFSIZE) + """
     .set startidx, mem + """ + str(int(BUFSIZE/2)) + """
 .section .text
@@ -24,6 +24,7 @@ _start:
     loops = []
     loopnum = 0
     outbuffpos = 0
+    outbuffsize = 0
     for token, value in tokens:
         if token == ADD:
             offset, value = value
@@ -112,6 +113,7 @@ _start:
     movq (%rbx), %r12
 
 """
+
         elif token == LOADOUT:
             offset, add = value
             outaddr = "(strbuff+" + str(outbuffpos) + ")"
@@ -126,6 +128,11 @@ _start:
                 output += "    subb $" + str(-add) + ", " + outaddr + "\n"
             outbuffpos += 1
 
+        elif token == LOADOUTSET:
+            outaddr = "(strbuff+" + str(outbuffpos) + ")"
+            output += "    movq $" + str(value) + ", " + outaddr + "\n"
+            outbuffpos += 1
+
         elif token == OUTPUT:
             output += """
     movq $1, %rax
@@ -135,6 +142,8 @@ _start:
     syscall
 
 """
+            if outbuffsize < outbuffpos + 8:
+                outbuffsize = outbuffpos + 8
             outbuffpos = 0
 
     # Exit syscall
@@ -144,6 +153,8 @@ _start:
     movq $0, %rdi
     syscall
 """
+
+    output = output.format(outbuffsize=outbuffsize)
 
     return output
 

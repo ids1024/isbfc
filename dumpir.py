@@ -2,7 +2,7 @@ import sys
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN, LOADOUT
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
 
 
 def dumpir(code):
@@ -27,6 +27,8 @@ def dumpir(code):
             print('scan(offset=%d)' % value)
         elif token == LOADOUT:
             print('loadout(offset=%d, add=%d)' % value)
+        elif token == LOADOUTSET:
+            print('loadoutset(value=%d)' % value)
         elif token == OUTPUT:
             print('output')
         else:

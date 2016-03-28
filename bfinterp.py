@@ -1,5 +1,7 @@
-# NOTE: This may not properly/at all. The compiler
-# is the focus.
+# NOTE: This may not work properly/at all. The compiler
+# is the focus. It exist mainly for debugging: since it uses
+# the same parser, it can separate parser/optimizer bugs from compiler
+# bugs.
 
 import sys
 import collections
@@ -8,7 +10,7 @@ import getch
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN, LOADOUT
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
 
 BUFSIZE = 8192
 
@@ -31,6 +33,8 @@ def interp(code):
         elif token == LOADOUT:
             offset, add = value
             outbuff += chr((mem[cur+offset] + add)%256)
+        elif token == LOADOUTSET:
+            outbuff += chr(value)
         elif token == INPUT:
             mem[cur] == ord(getch.getch())
         elif token == MOVE:
