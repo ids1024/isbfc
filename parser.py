@@ -195,6 +195,7 @@ def optimize(tokens):
                     j -= 1
                     break
                 j += 1
+
             if (adds or shifted or sets) and outputs:
                 for offset, add, _set in outputs:
                     if _set is not None:
