@@ -2,15 +2,13 @@ import sys
 
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
-from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, OUTPUTBUFF
+from parser import ADD, SET, MULCOPY, SCAN, LOADOUT
 
 
 def dumpir(code):
     tokens = parse(code)    
     tokens = optimize(tokens)
     for token, value in tokens:
-        if token == OUTPUT:
-            print('output(times=%d)' % value)
         elif token == INPUT:
             print('input')
         elif token == LOOP:
@@ -29,8 +27,8 @@ def dumpir(code):
             print('scan(offset=%d)' % value)
         elif token == LOADOUT:
             print('loadout(add=%d)' % value)
-        elif token == OUTPUTBUFF:
-            print('outputbuff')
+        elif token == OUTPUT:
+            print('output')
         else:
             print('TOKEN', i, 'NOT HANDLED')
 

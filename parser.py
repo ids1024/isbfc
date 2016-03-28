@@ -8,7 +8,6 @@ SET=6
 MULCOPY=7
 SCAN=8
 LOADOUT=9
-OUTPUTBUFF=10
 
 def parse(code):
     code = ''.join(i for i in code if i in '.,[]+-<>')
@@ -29,7 +28,8 @@ def parse(code):
         elif i == ',':
             tokens.append((INPUT, 1))
         if i == '.':
-            tokens.append((OUTPUT, 1))
+            tokens.append((LOADOUT, 0))
+            tokens.append((OUTPUT, None))
     return tokens
 
 def optimize(tokens):
@@ -134,13 +134,12 @@ def optimize(tokens):
             del newtokens[i:i+3]
             newtokens.insert(i, (SCAN, offset))
 
-        if (i < len(newtokens)-1 and
-             newtokens[i][0] == OUTPUT and
-             newtokens[i+1][0] == OUTPUT):
+        if (i < len(newtokens)-2 and
+             newtokens[i][0] == LOADOUT and
+             newtokens[i+1][0] == OUTPUT and
+             newtokens[i+2][0] == LOADOUT):
            
-            times = newtokens[i][1] + newtokens[i+1][1]
-            del newtokens[i:i+2]
-            newtokens.insert(i, (OUTPUT, times))
+            del newtokens[i+1]
 
         # Optimize ADD + OUTPUT + ADD
         if (i < len(newtokens)-2 and
@@ -152,10 +151,11 @@ def optimize(tokens):
                 if newtokens[j][0] == ADD:
                     offset, val = newtokens[j][1]
                     adds[offset] = adds.get(offset, 0) + val
+                elif newtokens[j][0] == LOADOUT:
+                    add = newtokens[j][1]
+                    outputs.append(adds.get(0, 0) + add)
                 elif newtokens[j][0] == OUTPUT:
-                    times = newtokens[j][1]
-                    for _ in range(times):
-                        outputs.append(adds.get(0, 0))
+                    pass
                 else:
                     j -= 1
                     break
@@ -165,7 +165,7 @@ def optimize(tokens):
                 for add in outputs:
                     newtokens.insert(i, (LOADOUT, add))
                     i += 1
-                newtokens.insert(i, (OUTPUTBUFF, None))
+                newtokens.insert(i, (OUTPUT, None))
                 i += 1
                 for offset, add in adds.items():
                     if add:
