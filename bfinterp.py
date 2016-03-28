@@ -6,8 +6,6 @@
 import sys
 import collections
 
-import getch
-
 from parser import parse, optimize
 from parser import OUTPUT, INPUT, LOOP, ENDLOOP, MOVE
 from parser import ADD, SET, MULCOPY, SCAN, LOADOUT, LOADOUTSET
@@ -37,7 +35,7 @@ def interp(code):
         elif token == LOADOUTSET:
             outbuff += chr(value)
         elif token == INPUT:
-            mem[cur] == ord(getch.getch())
+            mem[cur] == sys.stdin.buffer.read()
         elif token == MOVE:
             cur += value
         elif token == ADD:
