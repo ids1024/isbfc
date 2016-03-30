@@ -139,19 +139,6 @@ def optimize(tokens):
                     i = j
                     optimized = True
 
-        # SET + ADD = SET
-        if (not optimized and
-             i < len(newtokens)-1 and
-             newtokens[i][0] == SET and
-             newtokens[i+1][0] == ADD and
-             newtokens[i][1][0] == newtokens[i+1][1][0]):
-
-            offset = newtokens[i][1][0]
-            value = newtokens[i][1][1] + newtokens[i+1][1][1]
-            newtokens2.append((SET, (offset, value)))
-            i += 1
-            optimized = True
-
         # SET + MULCOPY = SET + ADD
         if (not optimized and
              i < len(newtokens)-1 and
