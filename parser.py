@@ -56,7 +56,7 @@ def optimize(tokens):
                 newtokens.append((ops[k], (k, v)))
             vals.clear()
             ops.clear()
-        if shift and token in (LOOP, ENDLOOP, INPUT, SCAN):
+        if shift and token in (LOOP, INPUT, SCAN):
             newtokens.append((MOVE, shift))
             shift = 0
 
@@ -90,7 +90,16 @@ def optimize(tokens):
                 newtokens.append((LOADOUT, (offset, vals[offset] + add)))
             else:
                 newtokens.append((LOADOUT, (offset, add)))
-        elif token in (ENDIF, LOADOUTSET, LOOP, ENDLOOP, INPUT, SCAN):
+        elif token == ENDLOOP:
+            if newtokens[-1][0] == LOOP and shift and not vals:
+                newtokens.pop() # Remove STARTLOOP
+                newtokens.append((SCAN, shift))
+            else:
+                if shift:
+                    newtokens.append((MOVE, shift))
+                newtokens.append((ENDLOOP, None))
+            shift = 0
+        elif token in (ENDIF, LOADOUTSET, LOOP, INPUT, SCAN):
             newtokens.append((token, value))
         else:
             raise ValueError('What is this ' + str(token) + ' doing here?')
@@ -104,17 +113,6 @@ def optimize(tokens):
     i = 0
     while i < len(newtokens):
         optimized = False
-
-        # Optimize scan loop
-        if (i < len(newtokens)-2 and
-             newtokens[i][0] == LOOP and
-             newtokens[i+1][0] == MOVE and
-             newtokens[i+2][0] == ENDLOOP):
-
-            offset = newtokens[i+1][1]
-            newtokens2.append((SCAN, offset))
-            optimized = True
-            i += 2
 
         # Optimize out clear loop / multiply move loop
         if not optimized and newtokens[i][0] == LOOP:
