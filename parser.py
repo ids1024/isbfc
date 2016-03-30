@@ -1,3 +1,5 @@
+import collections
+
 OUTPUT=0
 INPUT=1
 LOOP=2
@@ -170,58 +172,6 @@ def optimize(tokens):
             i = j - 1
             optimized = True
 
-        # Optimize MOVE + (SET/ADD/MULCOPY/IF) +
-        #     MOVE -> (SET/ADD/MULCOPY/IF) + MOVE
-        if (not optimized and
-             i < len(newtokens)-2 and
-             newtokens[i][0] == MOVE and
-             newtokens[i+1][0] in (SET, ADD, MULCOPY, IF)):
-
-            shift = newtokens[i][1]
-            vals = {}
-            ops = {}
-            commands = []
-            j = i + 1
-            while j < len(newtokens) and newtokens[j][0] != MOVE:
-                token, value = newtokens[j]
-                if token not in (SET, ADD):
-                    for k, v in vals.items():
-                        opp = ops[k]
-                        commands.append((opp, (shift+k, v)))
-                    vals.clear()
-                    ops.clear()
-
-                if token in (SET, ADD):
-                    offset, val = value
-                    # ADD/SET then SET does nothing; remove it
-                    if offset in ops and token == SET:
-                        ops.pop(offset)
-                        vals.pop(offset)
-                    if offset not in ops:
-                        ops[offset] = token # SET or ADD
-                    vals[offset] = vals.get(offset, 0) + val
-                elif token == MULCOPY:
-                    src, dest, mul = value
-                    commands.append((MULCOPY, (src+shift, dest+shift, mul)))
-                elif token == IF:
-                    offset = shift + value
-                    commands.append((IF, offset))
-                elif token == ENDIF:
-                    commands.append((ENDIF, None))
-                else:
-                    break
-                j += 1
-            else:
-                move = shift + newtokens[j][1]
-                newtokens2.extend(commands)
-                for k, v in vals.items():
-                    opp = ops[k]
-                    newtokens2.append((opp, (shift+k, v)))
-                if move:
-                    newtokens2.append((MOVE, move))
-                i = j
-                optimized = True
-
         if (not optimized and
              i < len(newtokens)-2 and
              newtokens[i][0] in (LOADOUT, LOADOUTSET) and
@@ -297,8 +247,55 @@ def optimize(tokens):
 
         i += 1
 
-    # Optimize recursively
-    if newtokens2 != tokens:
-        return optimize(newtokens2)
+    # Optimize various things
+    newtokens3 = []
+    shift = 0
+    # With normal dict, the order sometimes switches
+    # in recursion, and the optimized never exits.
+    vals = collections.OrderedDict()
+    ops = {}
+    for token, value in newtokens2:
+        if token not in (SET, ADD):
+            for k, v in vals.items():
+                newtokens3.append((ops[k], (k, v)))
+            vals.clear()
+            ops.clear()
 
-    return newtokens2
+        if token in (SET, ADD):
+            offset, val = value
+            offset += shift
+            # ADD/SET then SET does nothing; remove it
+            if offset in ops and token == SET:
+                ops.pop(offset)
+                vals.pop(offset)
+            if offset not in ops:
+                ops[offset] = token # SET or ADD
+            vals[offset] = vals.get(offset, 0) + val
+        elif token == MULCOPY:
+            src, dest, mul = value
+            newtokens3.append((MULCOPY, (src+shift, dest+shift, mul)))
+        # XXX Deal with shift in if
+        elif token == IF:
+            offset = shift + value
+            newtokens3.append((IF, offset))
+        elif token == ENDIF:
+            newtokens3.append((ENDIF, None))
+        elif token == MOVE:
+            shift += value
+        elif token == OUTPUT:
+            newtokens3.append((token, value))
+        elif token in (LOOP, ENDLOOP, INPUT, SCAN, LOADOUT, LOADOUTSET):
+            if shift:
+                newtokens3.append((MOVE, shift))
+                shift = 0
+            newtokens3.append((token, value))
+        else:
+            raise ValueError('What is this ' + str(token) + ' doing here?')
+
+    # Any remaining add/set/shift is ignored, as it would have no effect
+
+    # Optimize recursively
+    if newtokens3 != tokens:
+        return optimize(newtokens3)
+
+    return newtokens3
