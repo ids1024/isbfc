@@ -38,41 +38,52 @@ def parse(code):
     return tokens
 
 def optimize(tokens):
-    add = 0
-    move = 0
+    # Optimize various things
     newtokens = []
-    allzero = True
+    shift = 0
+    # With normal dict, the order sometimes switches
+    # in recursion, and the optimized never exits.
+    vals = collections.OrderedDict()
+    ops = {}
     for token, value in tokens:
-        if add and token != ADD:
-            newtokens.append((ADD, (0, add)))
-            add = 0
-        elif move and token != MOVE:
-            newtokens.append((MOVE, move))
-            move = 0
+        if token not in (SET, ADD):
+            for k, v in vals.items():
+                newtokens.append((ops[k], (k, v)))
+            vals.clear()
+            ops.clear()
 
-        if token == ADD and value[0] == 0:
-            #TODO: Optimization could still be extended
-            if allzero:
-                newtokens.append((SET, value))
-            else:
-                add += value[1]
-        elif token == ADD and allzero:
-            newtokens.append((SET, value))
-        elif token == LOADOUT and allzero:
-            offset, add = value
-            newtokens.append((LOADOUTSET, add))
+        if token in (SET, ADD):
+            offset, val = value
+            offset += shift
+            # ADD/SET then SET does nothing; remove it
+            if offset in ops and token == SET:
+                ops.pop(offset)
+                vals.pop(offset)
+            if offset not in ops:
+                ops[offset] = token # SET or ADD
+            vals[offset] = vals.get(offset, 0) + val
+        elif token == MULCOPY:
+            src, dest, mul = value
+            newtokens.append((MULCOPY, (src+shift, dest+shift, mul)))
+        # XXX Deal with shift in if
+        elif token == IF:
+            offset = shift + value
+            newtokens.append((IF, offset))
+        elif token == ENDIF:
+            newtokens.append((ENDIF, None))
         elif token == MOVE:
-            move += value
-        else:
+            shift += value
+        elif token == OUTPUT:
             newtokens.append((token, value))
+        elif token in (LOOP, ENDLOOP, INPUT, SCAN, LOADOUT, LOADOUTSET):
+            if shift:
+                newtokens.append((MOVE, shift))
+                shift = 0
+            newtokens.append((token, value))
+        else:
+            raise ValueError('What is this ' + str(token) + ' doing here?')
 
-        #NOTE: Must be updated for new tokens
-        if token in (ADD, SET, INPUT):
-            allzero = False
-    if add:
-        newtokens.append((ADD, (0, add)))
-    elif move:
-        newtokens.append((MOVE, move))
+    # Any remaining add/set/shift is ignored, as it would have no effect
 
     newtokens2 = []
 
@@ -234,55 +245,9 @@ def optimize(tokens):
 
         i += 1
 
-    # Optimize various things
-    newtokens3 = []
-    shift = 0
-    # With normal dict, the order sometimes switches
-    # in recursion, and the optimized never exits.
-    vals = collections.OrderedDict()
-    ops = {}
-    for token, value in newtokens2:
-        if token not in (SET, ADD):
-            for k, v in vals.items():
-                newtokens3.append((ops[k], (k, v)))
-            vals.clear()
-            ops.clear()
-
-        if token in (SET, ADD):
-            offset, val = value
-            offset += shift
-            # ADD/SET then SET does nothing; remove it
-            if offset in ops and token == SET:
-                ops.pop(offset)
-                vals.pop(offset)
-            if offset not in ops:
-                ops[offset] = token # SET or ADD
-            vals[offset] = vals.get(offset, 0) + val
-        elif token == MULCOPY:
-            src, dest, mul = value
-            newtokens3.append((MULCOPY, (src+shift, dest+shift, mul)))
-        # XXX Deal with shift in if
-        elif token == IF:
-            offset = shift + value
-            newtokens3.append((IF, offset))
-        elif token == ENDIF:
-            newtokens3.append((ENDIF, None))
-        elif token == MOVE:
-            shift += value
-        elif token == OUTPUT:
-            newtokens3.append((token, value))
-        elif token in (LOOP, ENDLOOP, INPUT, SCAN, LOADOUT, LOADOUTSET):
-            if shift:
-                newtokens3.append((MOVE, shift))
-                shift = 0
-            newtokens3.append((token, value))
-        else:
-            raise ValueError('What is this ' + str(token) + ' doing here?')
-
-    # Any remaining add/set/shift is ignored, as it would have no effect
 
     # Optimize recursively
-    if newtokens3 != tokens:
-        return optimize(newtokens3)
+    if newtokens2 != tokens:
+        return optimize(newtokens2)
 
-    return newtokens3
+    return newtokens2
