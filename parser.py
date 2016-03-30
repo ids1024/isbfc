@@ -45,12 +45,16 @@ def optimize(tokens):
     # in recursion, and the optimized never exits.
     vals = collections.OrderedDict()
     ops = {}
+    do_output = False
     for token, value in tokens:
         if token not in (SET, ADD):
             for k, v in vals.items():
                 newtokens.append((ops[k], (k, v)))
             vals.clear()
             ops.clear()
+        elif do_output and token not in (LOADOUT, LOADOUTSET):
+            newtokens.append((OUTPUT, None))
+            do_output = False
 
         if token in (SET, ADD):
             offset, val = value
@@ -74,7 +78,7 @@ def optimize(tokens):
         elif token == MOVE:
             shift += value
         elif token == OUTPUT:
-            newtokens.append((token, value))
+            do_output = True
         elif token in (LOOP, ENDLOOP, INPUT, SCAN, LOADOUT, LOADOUTSET):
             if shift:
                 newtokens.append((MOVE, shift))
@@ -84,6 +88,8 @@ def optimize(tokens):
             raise ValueError('What is this ' + str(token) + ' doing here?')
 
     # Any remaining add/set/shift is ignored, as it would have no effect
+    if do_output:
+        newtokens.append((OUTPUT, None))
 
     newtokens2 = []
 
@@ -168,17 +174,6 @@ def optimize(tokens):
 
             newtokens2.append((SET, (offset, value)))
             i = j - 1
-            optimized = True
-
-        if (not optimized and
-             i < len(newtokens)-2 and
-             newtokens[i][0] in (LOADOUT, LOADOUTSET) and
-             newtokens[i+1][0] == OUTPUT and
-             newtokens[i+2][0] in (LOADOUT, LOADOUTSET)):
-           
-            newtokens2.append(newtokens[i])
-            newtokens2.append(newtokens[i+2])
-            i += 2
             optimized = True
 
         # Optimize ADD/SET/MOVE + OUTPUT + ADD/SET/MOVE
