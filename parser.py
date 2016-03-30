@@ -47,14 +47,15 @@ def optimize(tokens):
     ops = {}
     do_output = False
     for token, value in tokens:
-        if token not in (SET, ADD):
+        if token not in (SET, ADD, MOVE, LOADOUT, LOADOUTSET):
+            if do_output:
+                newtokens.append((OUTPUT, None))
+                do_output = False
+
             for k, v in vals.items():
                 newtokens.append((ops[k], (k, v)))
             vals.clear()
             ops.clear()
-        elif do_output and token not in (LOADOUT, LOADOUTSET):
-            newtokens.append((OUTPUT, None))
-            do_output = False
 
         if token in (SET, ADD):
             offset, val = value
@@ -79,7 +80,18 @@ def optimize(tokens):
             shift += value
         elif token == OUTPUT:
             do_output = True
-        elif token in (LOOP, ENDLOOP, INPUT, SCAN, LOADOUT, LOADOUTSET):
+        elif token == LOADOUT:
+            offset, add = value
+            offset += shift
+            if ops.get(offset) == SET:
+                newtokens.append((LOADOUTSET, vals[offset] + add))
+            elif ops.get(offset) == ADD:
+                newtokens.append((LOADOUT, (offset, vals[offset] + add)))
+            else:
+                newtokens.append((LOADOUT, (offset, add)))
+        elif token == LOADOUTSET:
+            newtokens.append((token, value))
+        elif token in (LOOP, ENDLOOP, INPUT, SCAN):
             if shift:
                 newtokens.append((MOVE, shift))
                 shift = 0
@@ -176,70 +188,10 @@ def optimize(tokens):
             i = j - 1
             optimized = True
 
-        # Optimize ADD/SET/MOVE + OUTPUT + ADD/SET/MOVE
-        if (not optimized and
-             i < len(newtokens)-2 and
-             newtokens[i][0] in (ADD, MOVE, SET)):
-            j = i
-            outputs = []
-            adds = {}
-            sets = {}
-            shift = 0
-            shifted = False
-            while j < len(newtokens):
-                if newtokens[j][0] == ADD:
-                    offset, val = newtokens[j][1]
-                    offset += shift
-                    adds[offset] = adds.get(offset, 0) + val
-                elif newtokens[j][0] == SET:
-                    offset, val = newtokens[j][1]
-                    offset += shift
-                    adds[offset] = 0
-                    sets[offset] = val
-                elif newtokens[j][0] == LOADOUT:
-                    offset, add = newtokens[j][1]
-                    offset += shift
-                    if offset in sets:
-                        val = sets[offset] + adds.get(offset, 0) + add
-                        outputs.append((None, None, val))
-                    else:
-                        outputs.append((offset, adds.get(offset, 0) + add, None))
-                elif newtokens[j][0] == LOADOUTSET:
-                    value = newtokens[j][1]
-                    outputs.append((None, None, value))
-                elif newtokens[j][0] == MOVE:
-                    shift += newtokens[j][1]
-                    shifted = True
-                elif newtokens[j][0] == OUTPUT:
-                    pass
-                else:
-                    j -= 1
-                    break
-                j += 1
-
-            if (adds or shifted or sets) and outputs:
-                for offset, add, _set in outputs:
-                    if _set is not None:
-                        newtokens2.append((LOADOUTSET, _set))
-                    else:
-                        newtokens2.append((LOADOUT, (offset, add)))
-                newtokens2.append((OUTPUT, None))
-                for offset, val in sets.items():
-                    val = val + adds.get(offset, 0)
-                    newtokens2.append((SET, (offset, val)))
-                for offset, add in adds.items():
-                    if add and (offset not in sets):
-                        newtokens2.append((ADD, (offset, add)))
-                if shift:
-                    newtokens2.append((MOVE, shift))
-                i = j
-                optimized = True
-
         if not optimized:
             newtokens2.append(newtokens[i])
 
         i += 1
-
 
     # Optimize recursively
     if newtokens2 != tokens:
