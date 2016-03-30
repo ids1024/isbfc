@@ -47,6 +47,37 @@ def optimize(tokens):
     sets = collections.OrderedDict()
     do_output = False
     for token, value in tokens:
+        # Optimize out clear loop / multiply move loop
+        if (token == ENDLOOP and newtokens[-1][0] == LOOP and
+                not shift and 0 in adds):
+            if len(adds) == 1:
+                newtokens.pop() # Remove LOOP
+                if sets:
+                    newtokens.append((IF, 0))
+                    for offset, val in sets.items():
+                        newtokens.append((SET, (offset, val)))
+                newtokens.append((SET, (0, 0)))
+                if sets:
+                    newtokens.append((ENDIF, None))
+                adds.clear()
+                sets.clear()
+                continue
+            elif adds[0] == -1:
+                newtokens.pop() # Remove LOOP
+                if sets:
+                    newtokens.append((IF, 0))
+                    for k, v in sets.items():
+                        newtokens.append((SET, (k, v)))
+                for k, v in adds.items():
+                    if k != 0:
+                        newtokens.append((MULCOPY, (0, k, v)))
+                if sets:
+                    newtokens.append((ENDIF, None))
+                newtokens.append((SET, (0, 0)))
+                adds.clear()
+                sets.clear()
+                continue
+
         if token not in (SET, ADD, MOVE, LOADOUT, LOADOUTSET, OUTPUT):
             if do_output:
                 newtokens.append((OUTPUT, None))
@@ -119,54 +150,6 @@ def optimize(tokens):
     i = 0
     while i < len(newtokens):
         optimized = False
-
-        # Optimize out clear loop / multiply move loop
-        if not optimized and newtokens[i][0] == LOOP:
-            j = i + 1
-            adds = {}
-            sets = {}
-            while j < len(newtokens) and newtokens[j][0] != ENDLOOP:
-                if newtokens[j][0] == ADD:
-                    offset, add = newtokens[j][1]
-                    if offset in sets:
-                        sets[offset] += add
-                    else:
-                        adds[offset] = adds.get(offset, 0) + add
-                elif newtokens[j][0] == SET and newtokens[j][1][0] != 0:
-                    offset, val = newtokens[j][1]
-                    if offset in adds:
-                        del adds[offset]
-                    sets[offset] = val
-                else:
-                    break
-                j += 1
-            else:
-                if 0 not in adds:
-                    pass
-                    # print("Warning: Infinite loop detected.")
-                elif len(adds) == 1:
-                    if sets:
-                        newtokens2.append((IF, 0))
-                        for offset, val in sets.items():
-                            newtokens2.append((SET, (offset, val)))
-                    newtokens2.append((SET, (0, 0)))
-                    if sets:
-                        newtokens2.append((ENDIF, None))
-                    i = j
-                    optimized = True
-                elif adds[0] == -1:
-                    if sets:
-                        newtokens2.append((IF, 0))
-                        for offset, val in sets.items():
-                            newtokens2.append((SET, (offset, val)))
-                    for k, v in adds.items():
-                        if k != 0:
-                            newtokens2.append((MULCOPY, (0, k, v)))
-                    if sets:
-                        newtokens2.append((ENDIF, None))
-                    newtokens2.append((SET, (0, 0)))
-                    i = j
-                    optimized = True
 
         # SET + MULCOPY = SET + ADD
         if (not optimized and
