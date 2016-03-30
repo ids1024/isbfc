@@ -43,8 +43,8 @@ def optimize(tokens):
     shift = 0
     # With normal dict, the order sometimes switches
     # in recursion, and the optimized never exits.
-    vals = collections.OrderedDict()
-    ops = {}
+    adds = collections.OrderedDict()
+    sets = collections.OrderedDict()
     do_output = False
     for token, value in tokens:
         if token not in (SET, ADD, MOVE, LOADOUT, LOADOUTSET, OUTPUT):
@@ -52,24 +52,30 @@ def optimize(tokens):
                 newtokens.append((OUTPUT, None))
                 do_output = False
 
-            for k, v in vals.items():
-                newtokens.append((ops[k], (k, v)))
-            vals.clear()
-            ops.clear()
+            for k, v in sets.items():
+                newtokens.append((SET, (k, v)))
+            for k, v in adds.items():
+                newtokens.append((ADD, (k, v)))
+            sets.clear()
+            adds.clear()
         if shift and token in (LOOP, INPUT, SCAN):
             newtokens.append((MOVE, shift))
             shift = 0
 
-        if token in (SET, ADD):
+        if token == SET:
             offset, val = value
             offset += shift
-            # ADD/SET then SET does nothing; remove it
-            if offset in ops and token == SET:
-                ops.pop(offset)
-                vals.pop(offset)
-            if offset not in ops:
-                ops[offset] = token # SET or ADD
-            vals[offset] = vals.get(offset, 0) + val
+            # ADD then SET does nothing; remove it
+            if offset in adds and token == SET:
+                adds.pop(offset)
+            sets[offset] = val
+        elif token == ADD:
+            offset, val = value
+            offset += shift
+            if offset in sets:
+                sets[offset] = sets[offset] + val
+            else:
+                adds[offset] = adds.get(offset, 0) + val
         elif token == MULCOPY:
             src, dest, mul = value
             newtokens.append((MULCOPY, (src+shift, dest+shift, mul)))
@@ -84,14 +90,14 @@ def optimize(tokens):
         elif token == LOADOUT:
             offset, add = value
             offset += shift
-            if ops.get(offset) == SET:
-                newtokens.append((LOADOUTSET, vals[offset] + add))
-            elif ops.get(offset) == ADD:
-                newtokens.append((LOADOUT, (offset, vals[offset] + add)))
+            if offset in sets:
+                newtokens.append((LOADOUTSET, sets[offset] + add))
+            elif offset in adds:
+                newtokens.append((LOADOUT, (offset, adds[offset] + add)))
             else:
                 newtokens.append((LOADOUT, (offset, add)))
         elif token == ENDLOOP:
-            if newtokens[-1][0] == LOOP and shift and not vals:
+            if newtokens[-1][0] == LOOP and shift and not (sets or adds):
                 newtokens.pop() # Remove STARTLOOP
                 newtokens.append((SCAN, shift))
             else:
