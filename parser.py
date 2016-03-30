@@ -56,6 +56,9 @@ def optimize(tokens):
                 newtokens.append((ops[k], (k, v)))
             vals.clear()
             ops.clear()
+        if shift and token in (LOOP, ENDLOOP, INPUT, SCAN):
+            newtokens.append((MOVE, shift))
+            shift = 0
 
         if token in (SET, ADD):
             offset, val = value
@@ -74,8 +77,6 @@ def optimize(tokens):
         elif token == IF:
             offset = shift + value
             newtokens.append((IF, offset))
-        elif token == ENDIF:
-            newtokens.append((ENDIF, None))
         elif token == MOVE:
             shift += value
         elif token == OUTPUT:
@@ -89,12 +90,7 @@ def optimize(tokens):
                 newtokens.append((LOADOUT, (offset, vals[offset] + add)))
             else:
                 newtokens.append((LOADOUT, (offset, add)))
-        elif token == LOADOUTSET:
-            newtokens.append((token, value))
-        elif token in (LOOP, ENDLOOP, INPUT, SCAN):
-            if shift:
-                newtokens.append((MOVE, shift))
-                shift = 0
+        elif token in (ENDIF, LOADOUTSET, LOOP, ENDLOOP, INPUT, SCAN):
             newtokens.append((token, value))
         else:
             raise ValueError('What is this ' + str(token) + ' doing here?')
