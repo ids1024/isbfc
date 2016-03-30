@@ -1,0 +1,2 @@
+- Restructure optimizer to be simpler and faster
+- Rewrite in rust
