@@ -47,7 +47,7 @@ def optimize(tokens):
     ops = {}
     do_output = False
     for token, value in tokens:
-        if token not in (SET, ADD, MOVE, LOADOUT, LOADOUTSET):
+        if token not in (SET, ADD, MOVE, LOADOUT, LOADOUTSET, OUTPUT):
             if do_output:
                 newtokens.append((OUTPUT, None))
                 do_output = False
