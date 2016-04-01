@@ -188,8 +188,8 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 } else {
                     if shift != 0 {
                         newtokens.push(Token::Move(shift));
-                        shift = 0;
                     }
+                    shift = 0;
                     newtokens.push(Token::EndLoop);
                 }
             },
