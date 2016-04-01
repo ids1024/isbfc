@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::fs::File;
 
 extern crate isbfc;
-use isbfc::Token;
+use isbfc::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
 
@@ -18,31 +18,31 @@ fn main() {
 
     for token in tokens.iter() {
         match *token {
-            Token::Output =>
+            Output =>
                 println!("output"),
-            Token::Input =>
+            Input =>
                 println!("input"),
-            Token::Loop =>
+            Loop =>
                 println!("loop"),
-            Token::EndLoop =>
+            EndLoop =>
                 println!("endloop"),
-            Token::Move(offset) =>
+            Move(offset) =>
                 println!("move(offset={})", offset),
-            Token::Add(offset, value) =>
+            Add(offset, value) =>
                 println!("add(offset={}, value={})", offset, value),
-            Token::Set(offset, value) =>
+            Set(offset, value) =>
                 println!("set(offset={}, value={})", offset, value),
-            Token::MulCopy(src, dest, mul) =>
+            MulCopy(src, dest, mul) =>
                 println!("mulcopy(src={}, dest={}, mul={})", src, dest, mul),
-            Token::Scan(offset) =>
+            Scan(offset) =>
                 println!("scan(offset={})", offset),
-            Token::LoadOut(offset, add) =>
+            LoadOut(offset, add) =>
                 println!("loadout(offset={}, add={})", offset, add),
-            Token::LoadOutSet(value) =>
+            LoadOutSet(value) =>
                 println!("loadoutset(value={})", value),
-            Token::If(offset) =>
+            If(offset) =>
                 println!("if(offset={})", offset),
-            Token::EndIf =>
+            EndIf =>
                 println!("endif"),
         }
     }

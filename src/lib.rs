@@ -16,21 +16,22 @@ pub enum Token {
     If(i32),
     EndIf,
 }
+use Token::*;
 
 pub fn parse(code: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     for i in code.chars() {
         match i {
-            '+' => tokens.push(Token::Add(0, 1)),
-            '-' => tokens.push(Token::Add(0, -1)),
-            '>' => tokens.push(Token::Move(1)),
-            '<' => tokens.push(Token::Move(-1)),
-            '[' => tokens.push(Token::Loop),
-            ']' => tokens.push(Token::EndLoop),
-            ',' => tokens.push(Token::Input),
+            '+' => tokens.push(Add(0, 1)),
+            '-' => tokens.push(Add(0, -1)),
+            '>' => tokens.push(Move(1)),
+            '<' => tokens.push(Move(-1)),
+            '[' => tokens.push(Loop),
+            ']' => tokens.push(EndLoop),
+            ',' => tokens.push(Input),
             '.' => {
-                tokens.push(Token::LoadOut(0, 0));
-                tokens.push(Token::Output);
+                tokens.push(LoadOut(0, 0));
+                tokens.push(Output);
             },
             _ => ()
         };
@@ -54,17 +55,17 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
             Some(tok) => Some(*tok),
             None => None
         };
-        if *token == Token::EndLoop && prev_token == Some(Token::Loop) && shift == 0 && adds.contains_key(&0) {
+        if *token == EndLoop && prev_token == Some(Loop) && shift == 0 && adds.contains_key(&0) {
             if adds.len() == 1 {
                 newtokens.pop(); // Remove Loop
                 if !sets.is_empty() {
-                    newtokens.push(Token::If(0));
+                    newtokens.push(If(0));
                     for (offset, value) in sets.iter() {
-                        newtokens.push(Token::Set(*offset, *value));
+                        newtokens.push(Set(*offset, *value));
                     }
                     sets.clear();
-                    newtokens.push(Token::Set(0, 0));
-                    newtokens.push(Token::EndIf);
+                    newtokens.push(Set(0, 0));
+                    newtokens.push(EndIf);
                 } else {
                     sets.insert(0, 0);
                 }
@@ -74,9 +75,9 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
             } else if adds.get(&0) == Some(&-1) {
                 newtokens.pop(); // Remove Loop
                 if !sets.is_empty() {
-                    newtokens.push(Token::If(0));
+                    newtokens.push(If(0));
                     for (offset, value) in sets.iter() {
-                        newtokens.push(Token::Set(*offset, *value));
+                        newtokens.push(Set(*offset, *value));
                     }
                 }
                 for (offset, value) in adds.iter() {
@@ -86,14 +87,14 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                         let mul = *value;
                         if pre_loop_sets.contains_key(&src) {
                             let val = pre_loop_sets.get(&src).unwrap() * mul;
-                            newtokens.push(Token::Add(dest, val));
+                            newtokens.push(Add(dest, val));
                         } else {
-                            newtokens.push(Token::MulCopy(src, dest, mul));
+                            newtokens.push(MulCopy(src, dest, mul));
                         }
                     }
                 }
                 if !sets.is_empty() {
-                    newtokens.push(Token::EndIf);
+                    newtokens.push(EndIf);
                 }
                 pre_loop_sets.clear();
                 adds.clear();
@@ -104,27 +105,27 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
         }
 
         match *token {
-            Token::Loop =>
+            Loop =>
                 for (offset, value) in sets.iter() {
                     pre_loop_sets.insert(*offset+shift, *value);
                 },
-            Token::Set(_, _) | Token::Add(_, _) | Token::Move(_) => {},
+            Set(_, _) | Add(_, _) | Move(_) => {},
             _ => pre_loop_sets.clear()
         }
 
         match *token {
-            Token::Set(_, _) | Token::Add(_, _) | Token::Move(_) | Token::LoadOut(_, _) | Token::LoadOutSet(_) | Token::Output => {},
+            Set(_, _) | Add(_, _) | Move(_) | LoadOut(_, _) | LoadOutSet(_) | Output => {},
             _ => {
                if do_output {
-                   newtokens.push(Token::Output);
+                   newtokens.push(Output);
                    do_output = false;
                }
 
                for (offset, value) in sets.iter() {
-                  newtokens.push(Token::Set(*offset, *value));
+                  newtokens.push(Set(*offset, *value));
                }
                for (offset, value) in adds.iter() {
-                  newtokens.push(Token::Add(*offset, *value));
+                  newtokens.push(Add(*offset, *value));
                }
                sets.clear();
                adds.clear();
@@ -133,8 +134,8 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
 
         if shift != 0 {
            match *token {
-               Token::Loop | Token::Input | Token::Scan(_) => {
-                   newtokens.push(Token::Move(shift));
+               Loop | Input | Scan(_) => {
+                   newtokens.push(Move(shift));
                    shift = 0;
                },
                _ => {}
@@ -142,7 +143,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
         }
 
         match *token {
-            Token::Set(mut offset, val) => {
+            Set(mut offset, val) => {
                 offset += shift;
                 // Add before Set does nothing; remove it
                 if adds.contains_key(&offset) {
@@ -150,7 +151,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 }
                 sets.insert(offset, val);
             },
-            Token::Add(mut offset, mut val) => {
+            Add(mut offset, mut val) => {
                 offset += shift;
                 if sets.contains_key(&offset) {
                     val = sets.get(&offset).unwrap() + val;
@@ -160,47 +161,47 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     adds.insert(offset, val);
                 }
             },
-            Token::MulCopy(src, dest, mul) =>
-                newtokens.push(Token::MulCopy(src+shift, dest+shift, mul)),
+            MulCopy(src, dest, mul) =>
+                newtokens.push(MulCopy(src+shift, dest+shift, mul)),
             // XXX Deal with shift in if, if those are ever generated
-            Token::If(offset) =>
-                newtokens.push(Token::If(offset+shift)),
-            Token::Move(offset) =>
+            If(offset) =>
+                newtokens.push(If(offset+shift)),
+            Move(offset) =>
                 shift += offset,
-            Token::Output =>
+            Output =>
                 do_output = true,
-            Token::LoadOut(mut offset, add) => {
+            LoadOut(mut offset, add) => {
                 offset += shift;
                 if sets.contains_key(&offset) {
-                    newtokens.push(Token::LoadOutSet(sets.get(&offset).unwrap() + add));
+                    newtokens.push(LoadOutSet(sets.get(&offset).unwrap() + add));
                 } else {
-                    newtokens.push(Token::LoadOut(offset, adds.get(&offset).unwrap_or(&0) + add));
+                    newtokens.push(LoadOut(offset, adds.get(&offset).unwrap_or(&0) + add));
                 }
             },
-            Token::EndLoop => {
+            EndLoop => {
                 prev_token = match newtokens.last() {
                             Some(tok) => Some(*tok),
                             None => None
                         };
-                if prev_token == Some(Token::Loop) && shift != 0 && sets.is_empty() && adds.is_empty() {
+                if prev_token == Some(Loop) && shift != 0 && sets.is_empty() && adds.is_empty() {
                     newtokens.pop(); // Remove StartLoop
-                    newtokens.push(Token::Scan(shift));
+                    newtokens.push(Scan(shift));
                 } else {
                     if shift != 0 {
-                        newtokens.push(Token::Move(shift));
+                        newtokens.push(Move(shift));
                     }
-                    newtokens.push(Token::EndLoop);
+                    newtokens.push(EndLoop);
                 }
                 shift = 0;
             },
-            Token::EndIf | Token::LoadOutSet(_) | Token::Loop | Token::Input | Token::Scan(_) =>
+            EndIf | LoadOutSet(_) | Loop | Input | Scan(_) =>
                 newtokens.push(*token),
         }
     }
 
     // Any remaining add/set/shift is ignored, as it would have no effect
     if do_output {
-        newtokens.push(Token::Output);
+        newtokens.push(Output);
     }
 
     // Optimize recursively

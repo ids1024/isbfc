@@ -9,7 +9,7 @@ use std::io::prelude::*;
 use std::fs::File;
 
 extern crate isbfc;
-use isbfc::Token;
+use isbfc::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
 
@@ -32,15 +32,15 @@ fn main() {
     while i < tokens.len() - 1 {
         let mut token = tokens.get(i).unwrap();
         match *token {
-            Token::Add(offset, value) =>
+            Add(offset, value) =>
                 mem[(cur as i32 + offset) as usize] += value,
-            Token::MulCopy(src, dest, mul) =>
+            MulCopy(src, dest, mul) =>
                 mem[(cur as i32 + dest) as usize] += mem[(cur as i32 + src) as usize]*mul,
-            Token::Set(offset, value) =>
+            Set(offset, value) =>
                 mem[(cur as i32 + offset) as usize] = value,
-            Token::Move(offset) =>
+            Move(offset) =>
                 cur = (cur as i32 + offset) as usize,
-            Token::Loop =>
+            Loop =>
                 if mem[cur] != 0 {
                     loops.push(i);
                 } else {
@@ -48,47 +48,47 @@ fn main() {
                     while i < tokens.len() && skiploop > 0 {
                         i += 1;
                         token = tokens.get(i).unwrap();
-                        if *token == Token::EndLoop {
+                        if *token == EndLoop {
                             skiploop -= 1;
-                        } else if *token == Token::Loop {
+                        } else if *token == Loop {
                             skiploop += 1;
                         }
                     }
                 },
-            Token::EndLoop =>
+            EndLoop =>
                 if mem[cur] != 0 {
                     i = *loops.last().unwrap() as usize;
                 } else {
                     loops.pop().unwrap();
                 },
-            Token::If(offset) =>
+            If(offset) =>
                 if mem[(cur as i32 + offset) as usize] == 0 {
                     let mut skipif = 1;
                     while i < tokens.len() && skipif > 0 {
                         i += 1;
                         token = tokens.get(i).unwrap();
-                        if *token == Token::EndIf {
+                        if *token == EndIf {
                             skipif -= 1;
-                        } else if let Token::If(_) = *token {
+                        } else if let If(_) = *token {
                             skipif += 1;
                         }
                     }
                 },
-            Token::EndIf => {},
-            Token::Scan(offset) =>
+            EndIf => {},
+            Scan(offset) =>
                 while mem[cur] != 0 {
                     cur = (cur as i32 + offset) as usize;
                 },
-            Token::Input => {
+            Input => {
                 let mut buffer = [0; 1];
                 io::stdin().take(1).read(&mut buffer).unwrap();
                 mem[cur] = buffer[0] as i32;
             },
-            Token::LoadOut(offset, add) =>
+            LoadOut(offset, add) =>
                 outbuff.push((mem[(cur as i32 + offset) as usize] + add) as u8 as char),
-            Token::LoadOutSet(value) =>
+            LoadOutSet(value) =>
                 outbuff.push(value as u8 as char),
-            Token::Output => {
+            Output => {
                 io::stdout().write(outbuff.as_bytes()).unwrap();
                 io::stdout().flush().unwrap();
                 outbuff.clear();

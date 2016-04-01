@@ -4,7 +4,7 @@ use std::fs::File;
 use std::process::Command;
 
 extern crate isbfc;
-use isbfc::Token;
+use isbfc::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
 
@@ -30,7 +30,7 @@ fn main() {
     let mut outbuffsize = 0;
     for token in tokens.iter() {
         match *token {
-            Token::Add(offset, value) => {
+            Add(offset, value) => {
                 let dest = if offset == 0 {
                     "%r12".to_string()
                 } else {
@@ -46,7 +46,7 @@ fn main() {
                     output.push_str(&format!("    subq ${}, {}\n", -value, dest));
                 }
             },
-            Token::MulCopy(src_idx, dest_idx, mul) => {
+            MulCopy(src_idx, dest_idx, mul) => {
                 let mut src = if src_idx == 0 {
                     "%r12".to_string()
                 } else {
@@ -76,7 +76,7 @@ fn main() {
                     output.push_str(&format!("    subq {}, {}\n", src, dest));
                 }
             },
-            Token::Set(offset, value) => {
+            Set(offset, value) => {
                 if offset == 0 && value == 0 {
                     output.push_str("    xor %r12, %r12\n");
                 } else if offset == 0 {
@@ -85,7 +85,7 @@ fn main() {
                     output.push_str(&format!("    movq ${}, {}(%rbx)\n", value, offset*8));
                 }
             },
-            Token::Move(offset) => {
+            Move(offset) => {
                 if offset != 0 {
                     output.push_str("    movq %r12, (%rbx)\n");
                     if offset > 0 {
@@ -96,7 +96,7 @@ fn main() {
                     output.push_str("    movq (%rbx), %r12\n");
                 }
             },
-            Token::Loop => {
+            Loop => {
                 loopnum += 1;
                 loops.push(loopnum);
                 output.push_str(&format!(concat!(
@@ -104,7 +104,7 @@ fn main() {
                         "    loop{}:\n"),
                         loopnum, loopnum));
             },
-            Token::EndLoop => {
+            EndLoop => {
                 let curloop = loops.pop().unwrap();
                 output.push_str(&format!(concat!(
                             "    endloop{}:\n",
@@ -112,7 +112,7 @@ fn main() {
                             "    jnz loop{}\n"),
                             curloop, curloop))
             },
-            Token::If(offset) => {
+            If(offset) => {
                 ifnum += 1;
                 ifs.push(ifnum);
                 if offset == 0 {
@@ -122,9 +122,9 @@ fn main() {
                 }
                 output.push_str(&format!("    jz endif{}\n", ifnum));
             },
-            Token::EndIf =>
+            EndIf =>
                 output.push_str(&format!("    endif{}:\n", ifs.pop().unwrap())),
-            Token::Scan(offset) => {
+            Scan(offset) => {
                 // Slighly more optimal than normal loop and move
                 loopnum += 1;
                 output.push_str(&format!(concat!(
@@ -144,14 +144,14 @@ fn main() {
                             "    movq (%rbx), %r12\n"),
                             loopnum, loopnum));
             },
-            Token::Input =>
+            Input =>
                 output.push_str(concat!("\n    xor %rax, %rax\n",
                                         "    xor %rdi, %rdi\n",
                                         "    movq %rbx, %rsi\n",
                                         "    movq $1, %rdx\n",
                                         "    syscall\n",
                                         "    movq (%rbx), %r12\n\n")),
-            Token::LoadOut(offset, add) => {
+            LoadOut(offset, add) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
                 if offset == 0 {
                     output.push_str(&format!("    movq %r12, {}\n", outaddr));
@@ -166,12 +166,12 @@ fn main() {
                 }
                 outbuffpos += 1;
             },
-            Token::LoadOutSet(value) => {
+            LoadOutSet(value) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
                 output.push_str(&format!("    movq ${}, {}\n", value, outaddr));
                 outbuffpos += 1;
             },
-            Token::Output => {
+            Output => {
                 output.push_str(&format!(concat!(
                             "    movq $1, %rax\n",
                             "    movq $1, %rdi\n",
