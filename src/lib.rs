@@ -43,6 +43,8 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     let mut newtokens: Vec<Token> = Vec::new();
     let mut shift = 0;
     let mut do_output = false;
+    // With HashMap, the order sometimes switches
+    // in recursion, and the optimizer never exits.
     let mut adds: BTreeMap<i32, i32> = BTreeMap::new();
     let mut sets: BTreeMap<i32, i32> = BTreeMap::new();
     let mut pre_loop_sets: BTreeMap<i32, i32> = BTreeMap::new();
