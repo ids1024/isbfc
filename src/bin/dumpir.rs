@@ -13,7 +13,7 @@ fn main() {
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
     
-    let tokens = parse(code.as_str());
+    let tokens = parse(&code);
     let tokens = optimize(tokens);
 
     for token in tokens.iter() {
