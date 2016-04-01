@@ -24,13 +24,21 @@ fn main() {
         .get_matches();
 
     let path = matches.value_of("FILENAME").unwrap();
+    let name = path.rsplitn(2, '.').last().unwrap();
     let mut file = File::open(&path).unwrap();
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
     println!("Compiling...");
- 
-    let tokens = parse(code.as_str());
+    let output = compile(&code);
+    let mut asmfile = File::create(format!("{}.s", name)).unwrap();
+    asmfile.write_all(&output.into_bytes()).unwrap();
+    asm_and_link(&name);
+}
+
+
+fn compile(code: &str) -> String {
+    let tokens = parse(code);
     let tokens = optimize(tokens);
 
     let mut output = String::new();
@@ -205,7 +213,7 @@ fn main() {
                             "    movq $0, %rdi\n",
                             "    syscall\n"));
 
-    output = format!(concat!(
+    format!(concat!(
             ".section .bss\n",
             "    .lcomm strbuff, {outbuffsize}\n",
             "    .lcomm mem, {}\n",
@@ -215,12 +223,10 @@ fn main() {
             "_start:\n",
             "    xor %r12, %r12\n",
             "    movq $startidx, %rbx\n\n{}"),
-            BUFSIZE, BUFSIZE/2, output, outbuffsize=outbuffsize);
+            BUFSIZE, BUFSIZE/2, output, outbuffsize=outbuffsize)
+}
 
-    let name = path.rsplitn(2, '.').last().unwrap();
-    let mut asmfile = File::create(format!("{}.s", name)).unwrap();
-    asmfile.write_all(&output.into_bytes()).unwrap();
-
+fn asm_and_link(name: &str) {;
     println!("Assembling...");
     let status = Command::new("as")
         .arg("-g")
