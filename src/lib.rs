@@ -189,9 +189,9 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     if shift != 0 {
                         newtokens.push(Token::Move(shift));
                     }
-                    shift = 0;
                     newtokens.push(Token::EndLoop);
                 }
+                shift = 0;
             },
             Token::EndIf | Token::LoadOutSet(_) | Token::Loop | Token::Input | Token::Scan(_) =>
                 newtokens.push(*token),
