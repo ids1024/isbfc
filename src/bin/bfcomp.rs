@@ -1,6 +1,6 @@
 use std::io::prelude::*;
 use std::fs::File;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 extern crate clap;
 use clap::{Arg, App};
@@ -17,6 +17,9 @@ fn main() {
         .version("0.0.1")
         .author("Ian D. Scott <ian@iandouglasscott.com>")
         .about("Brainfuck compiler")
+        .arg(Arg::with_name("output_asm")
+             .short("S")
+             .help("Assemble but do not link"))
         .arg(Arg::with_name("FILENAME")
              .help("Source file to compile")
              .required(true)
@@ -31,9 +34,12 @@ fn main() {
 
     println!("Compiling...");
     let output = compile(&code);
-    let mut asmfile = File::create(format!("{}.s", name)).unwrap();
-    asmfile.write_all(&output.into_bytes()).unwrap();
-    asm_and_link(&name);
+    if matches.is_present("output_asm") {
+        let mut asmfile = File::create(format!("{}.s", name)).unwrap();
+        asmfile.write_all(&output.into_bytes()).unwrap();
+    } else {
+        asm_and_link(&output, &name);
+    }
 }
 
 
@@ -226,14 +232,21 @@ fn compile(code: &str) -> String {
             BUFSIZE, BUFSIZE/2, output, outbuffsize=outbuffsize)
 }
 
-fn asm_and_link(name: &str) {;
+
+fn asm_and_link(code: &str, name: &str) {;
     println!("Assembling...");
-    let status = Command::new("as")
+
+    let mut child = Command::new("as")
         .arg("-g")
-        .arg(format!("{}.s", name))
+        .arg("-") // Standard input
         .arg("-o")
         .arg(format!("{}.o", name))
-        .status().unwrap();
+        .stdin(Stdio::piped())
+        .spawn().unwrap();
+
+    child.stdin.take().unwrap().write_all(code.as_bytes()).unwrap();
+
+    let status = child.wait().unwrap();
     if status.code() == Some(0) {
         println!("Linking...");
         Command::new("ld")
