@@ -52,7 +52,7 @@ fn main() {
                 } else {
                     format!("{}(%rbx)", (src_idx*8))
                 };
-                let dest = if src_idx == 0 {
+                let dest = if dest_idx == 0 {
                     "%r12".to_string()
                 } else {
                     format!("{}(%rbx)", (dest_idx*8))
