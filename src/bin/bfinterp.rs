@@ -1,3 +1,8 @@
+// NOTE: This may not work properly/at all. The compiler
+// is the focus. It exist mainly for debugging: since it uses
+// the same parser, it can separate parser/optimizer bugs from compiler
+// bugs.
+
 use std::env;
 use std::io;
 use std::io::prelude::*;
