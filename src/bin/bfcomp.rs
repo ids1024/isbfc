@@ -18,7 +18,11 @@ fn main() {
         .arg(Arg::with_name("output_asm")
              .short("S")
              .help("Assemble but do not link"))
-        .arg(Arg::with_name("tape-size")
+        .arg(Arg::with_name("out_name")
+             .short("o")
+             .help("Output file name")
+             .takes_value(true))
+        .arg(Arg::with_name("tape_size")
              .long("tape-size")
              .help("Size of tape; defaults to 8192")
              .takes_value(true)
@@ -30,12 +34,13 @@ fn main() {
         .get_matches();
 
     let mut tape_size = 8192;
-    if let Some(tape_size_str) = matches.value_of("tape-size") {
+    if let Some(tape_size_str) = matches.value_of("tape_size") {
         tape_size = tape_size_str.parse::<i32>().unwrap();
     }
 
     let path = matches.value_of("FILENAME").unwrap();
     let name = path.rsplitn(2, '.').last().unwrap();
+    let out_name = matches.value_of("out_name").unwrap_or(name);
     let mut file = File::open(&path).unwrap();
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
@@ -46,7 +51,7 @@ fn main() {
         let mut asmfile = File::create(format!("{}.s", name)).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
-        asm_and_link(&output, &name);
+        asm_and_link(&output, &name, &out_name);
     }
 }
 
@@ -241,7 +246,7 @@ fn compile(code: &str, tape_size: i32) -> String {
 }
 
 
-fn asm_and_link(code: &str, name: &str) {;
+fn asm_and_link(code: &str, name: &str, out_name: &str) {;
     println!("Assembling...");
 
     let mut child = Command::new("as")
@@ -260,7 +265,7 @@ fn asm_and_link(code: &str, name: &str) {;
         Command::new("ld")
             .arg(format!("{}.o", name))
             .arg("-o")
-            .arg(name)
+            .arg(out_name)
             .spawn().unwrap();
     }
 }
