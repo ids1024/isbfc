@@ -10,8 +10,6 @@ use isbfc::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
 
-const BUFSIZE: i32 = 8192;
-
 fn main() {
     let matches = App::new("isbfc")
         .version("0.0.1")
@@ -20,11 +18,21 @@ fn main() {
         .arg(Arg::with_name("output_asm")
              .short("S")
              .help("Assemble but do not link"))
+        .arg(Arg::with_name("tape-size")
+             .long("tape-size")
+             .help("Size of tape; defaults to 8192")
+             .takes_value(true)
+             .empty_values(false))
         .arg(Arg::with_name("FILENAME")
              .help("Source file to compile")
              .required(true)
              .index(1))
         .get_matches();
+
+    let mut tape_size = 8192;
+    if let Some(tape_size_str) = matches.value_of("tape-size") {
+        tape_size = tape_size_str.parse::<i32>().unwrap();
+    }
 
     let path = matches.value_of("FILENAME").unwrap();
     let name = path.rsplitn(2, '.').last().unwrap();
@@ -33,7 +41,7 @@ fn main() {
     file.read_to_string(&mut code).unwrap();
 
     println!("Compiling...");
-    let output = compile(&code);
+    let output = compile(&code, tape_size);
     if matches.is_present("output_asm") {
         let mut asmfile = File::create(format!("{}.s", name)).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
@@ -43,7 +51,7 @@ fn main() {
 }
 
 
-fn compile(code: &str) -> String {
+fn compile(code: &str, tape_size: i32) -> String {
     let tokens = parse(code);
     let tokens = optimize(tokens);
 
@@ -229,7 +237,7 @@ fn compile(code: &str) -> String {
             "_start:\n",
             "    xor %r12, %r12\n",
             "    movq $startidx, %rbx\n\n{}"),
-            BUFSIZE, BUFSIZE/2, output, outbuffsize=outbuffsize)
+            tape_size, tape_size/2, output, outbuffsize=outbuffsize)
 }
 
 
