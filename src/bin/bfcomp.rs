@@ -1,7 +1,9 @@
-use std::env;
 use std::io::prelude::*;
 use std::fs::File;
 use std::process::Command;
+
+extern crate clap;
+use clap::{Arg, App};
 
 extern crate isbfc;
 use isbfc::Token::*;
@@ -11,7 +13,17 @@ use isbfc::optimize;
 const BUFSIZE: i32 = 8192;
 
 fn main() {
-    let path = env::args().nth(1).unwrap();
+    let matches = App::new("isbfc")
+        .version("0.0.1")
+        .author("Ian D. Scott <ian@iandouglasscott.com>")
+        .about("Brainfuck compiler")
+        .arg(Arg::with_name("FILENAME")
+             .help("Source file to compile")
+             .required(true)
+             .index(1))
+        .get_matches();
+
+    let path = matches.value_of("FILENAME").unwrap();
     let mut file = File::open(&path).unwrap();
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
