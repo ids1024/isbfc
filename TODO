@@ -1,2 +1,6 @@
-- Restructure optimizer to be simpler and faster
-- Rewrite in rust
+✓ Restructure optimizer to be simpler and faster
+✓ Rewrite in rust
+- Further optimizations
+- Automated testing
+- Add README file
+- JIT
