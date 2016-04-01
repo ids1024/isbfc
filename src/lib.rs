@@ -51,10 +51,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     let mut pre_loop_sets: BTreeMap<i32, i32> = BTreeMap::new();
 
     for token in tokens.iter() {
-        let mut prev_token = match newtokens.last() {
-            Some(tok) => Some(*tok),
-            None => None
-        };
+        let mut prev_token = newtokens.last().map(|t| *t);
         if *token == EndLoop && prev_token == Some(Loop) && shift == 0 && adds.contains_key(&0) {
             if adds.len() == 1 {
                 newtokens.pop(); // Remove Loop
@@ -179,10 +176,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 }
             },
             EndLoop => {
-                prev_token = match newtokens.last() {
-                            Some(tok) => Some(*tok),
-                            None => None
-                        };
+                prev_token = newtokens.last().map(|t| *t);
                 if prev_token == Some(Loop) && shift != 0 && sets.is_empty() && adds.is_empty() {
                     newtokens.pop(); // Remove StartLoop
                     newtokens.push(Scan(shift));
