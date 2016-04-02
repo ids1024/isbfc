@@ -60,7 +60,13 @@ fn main() {
     let tokens = optimize(tokens);
 
     if matches.is_present("dump_ir") {
-        dump_ir(tokens);
+        let output = dump_ir(tokens);
+        if let Some(out_name) = matches.value_of("out_name") {
+            let mut irfile = File::create(out_name).unwrap();
+            irfile.write_all(&output.into_bytes()).unwrap();
+        } else {
+            print!("{}", output);
+        }
     } else if matches.is_present("output_asm") {
         let output = compile(tokens, tape_size);
         let def_name = format!("{}.s", name);
@@ -293,35 +299,37 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
 }
 
 
-fn dump_ir(tokens: Vec<Token>) {
+fn dump_ir(tokens: Vec<Token>) -> String {
+    let mut output = String::new();
     for token in tokens.iter() {
         match *token {
             Output =>
-                println!("output"),
+                output.push_str("output\n"),
             Input =>
-                println!("input"),
+                output.push_str("input\n"),
             Loop =>
-                println!("loop"),
+                output.push_str("loop\n"),
             EndLoop =>
-                println!("endloop"),
+                output.push_str("endloop\n"),
             Move(offset) =>
-                println!("move(offset={})", offset),
+                output.push_str(&format!("move(offset={})\n", offset)),
             Add(offset, value) =>
-                println!("add(offset={}, value={})", offset, value),
+                output.push_str(&format!("add(offset={}, value={})\n", offset, value)),
             Set(offset, value) =>
-                println!("set(offset={}, value={})", offset, value),
+                output.push_str(&format!("set(offset={}, value={})\n", offset, value)),
             MulCopy(src, dest, mul) =>
-                println!("mulcopy(src={}, dest={}, mul={})", src, dest, mul),
+                output.push_str(&format!("mulcopy(src={}, dest={}, mul={})\n", src, dest, mul)),
             Scan(offset) =>
-                println!("scan(offset={})", offset),
+                output.push_str(&format!("scan(offset={})\n", offset)),
             LoadOut(offset, add) =>
-                println!("loadout(offset={}, add={})", offset, add),
+                output.push_str(&format!("loadout(offset={}, add={})\n", offset, add)),
             LoadOutSet(value) =>
-                println!("loadoutset(value={})", value),
+                output.push_str(&format!("loadoutset(value={})\n", value)),
             If(offset) =>
-                println!("if(offset={})", offset),
+                output.push_str(&format!("if(offset={})\n", offset)),
             EndIf =>
-                println!("endif"),
+                output.push_str("endif\n"),
         }
     }
+    output
 }
