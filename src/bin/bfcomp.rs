@@ -3,7 +3,7 @@ use std::fs::File;
 use std::process::{Command, Stdio};
 
 extern crate clap;
-use clap::{Arg, App};
+use clap::{Arg, ArgGroup, App};
 
 extern crate isbfc;
 use isbfc::Token;
@@ -19,6 +19,11 @@ fn main() {
         .arg(Arg::with_name("output_asm")
              .short("S")
              .help("Assemble but do not link"))
+        .arg(Arg::with_name("dump_ir")
+             .long("dumpir")
+             .help("Dump intermediate representation; for debugging"))
+        .group(ArgGroup::with_name("actions")
+             .args(&["output_asm", "dump_ir"]))
         .arg(Arg::with_name("debugging_symbols")
              .short("g")
              .help("Generate debugging information"))
@@ -55,11 +60,14 @@ fn main() {
     let tokens = parse(&code);
     let tokens = optimize(tokens);
 
-    let output = compile(tokens, tape_size);
-    if matches.is_present("output_asm") {
+    if matches.is_present("dump_ir") {
+        dump_ir(tokens);
+    } else if matches.is_present("output_asm") {
+        let output = compile(tokens, tape_size);
         let mut asmfile = File::create(format!("{}.s", name)).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
+        let output = compile(tokens, tape_size);
         let debug = matches.is_present("debugging_symbols");
         asm_and_link(&output, &name, &out_name, debug);
     }
@@ -279,5 +287,39 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
             .arg("-o")
             .arg(out_name)
             .spawn().unwrap();
+    }
+}
+
+
+fn dump_ir(tokens: Vec<Token>) {
+    for token in tokens.iter() {
+        match *token {
+            Output =>
+                println!("output"),
+            Input =>
+                println!("input"),
+            Loop =>
+                println!("loop"),
+            EndLoop =>
+                println!("endloop"),
+            Move(offset) =>
+                println!("move(offset={})", offset),
+            Add(offset, value) =>
+                println!("add(offset={}, value={})", offset, value),
+            Set(offset, value) =>
+                println!("set(offset={}, value={})", offset, value),
+            MulCopy(src, dest, mul) =>
+                println!("mulcopy(src={}, dest={}, mul={})", src, dest, mul),
+            Scan(offset) =>
+                println!("scan(offset={})", offset),
+            LoadOut(offset, add) =>
+                println!("loadout(offset={}, add={})", offset, add),
+            LoadOutSet(value) =>
+                println!("loadoutset(value={})", value),
+            If(offset) =>
+                println!("if(offset={})", offset),
+            EndIf =>
+                println!("endif"),
+        }
     }
 }
