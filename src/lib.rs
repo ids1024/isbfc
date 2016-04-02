@@ -101,10 +101,12 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
         }
 
         match *token {
-            Loop =>
+            Loop => {
+                pre_loop_sets.clear();
                 for (offset, value) in sets.iter() {
                     pre_loop_sets.insert(*offset+shift, *value);
-                },
+                }
+            },
             Set(_, _) | Add(_, _) | Move(_) => {},
             _ => pre_loop_sets.clear()
         }
