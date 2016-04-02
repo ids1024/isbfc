@@ -18,6 +18,9 @@ fn main() {
         .arg(Arg::with_name("output_asm")
              .short("S")
              .help("Assemble but do not link"))
+        .arg(Arg::with_name("debugging_symbols")
+             .short("g")
+             .help("Generate debugging information"))
         .arg(Arg::with_name("out_name")
              .short("o")
              .help("Output file name")
@@ -51,7 +54,8 @@ fn main() {
         let mut asmfile = File::create(format!("{}.s", name)).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
-        asm_and_link(&output, &name, &out_name);
+        let debug = matches.is_present("debugging_symbols");
+        asm_and_link(&output, &name, &out_name, debug);
     }
 }
 
@@ -246,11 +250,14 @@ fn compile(code: &str, tape_size: i32) -> String {
 }
 
 
-fn asm_and_link(code: &str, name: &str, out_name: &str) {;
+fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
     println!("Assembling...");
 
-    let mut child = Command::new("as")
-        .arg("-g")
+    let mut command = Command::new("as");
+    if debug {
+        command.arg("-g");
+    }
+    let mut child = command
         .arg("-") // Standard input
         .arg("-o")
         .arg(format!("{}.o", name))
