@@ -6,6 +6,7 @@ extern crate clap;
 use clap::{Arg, App};
 
 extern crate isbfc;
+use isbfc::Token;
 use isbfc::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
@@ -51,8 +52,10 @@ fn main() {
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
-    println!("Compiling...");
-    let output = compile(&code, tape_size);
+    let tokens = parse(&code);
+    let tokens = optimize(tokens);
+
+    let output = compile(tokens, tape_size);
     if matches.is_present("output_asm") {
         let mut asmfile = File::create(format!("{}.s", name)).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
@@ -63,9 +66,8 @@ fn main() {
 }
 
 
-fn compile(code: &str, tape_size: i32) -> String {
-    let tokens = parse(code);
-    let tokens = optimize(tokens);
+fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
+    println!("Compiling...");
 
     let mut output = String::new();
     let mut loops: Vec<i32> = Vec::new();
