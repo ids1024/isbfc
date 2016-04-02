@@ -52,7 +52,6 @@ fn main() {
 
     let path = matches.value_of("FILENAME").unwrap();
     let name = path.rsplitn(2, '.').last().unwrap();
-    let out_name = matches.value_of("out_name").unwrap_or(name);
     let mut file = File::open(&path).unwrap();
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
@@ -64,10 +63,13 @@ fn main() {
         dump_ir(tokens);
     } else if matches.is_present("output_asm") {
         let output = compile(tokens, tape_size);
-        let mut asmfile = File::create(format!("{}.s", name)).unwrap();
+        let def_name = format!("{}.s", name);
+        let out_name = matches.value_of("out_name").unwrap_or(&def_name);
+        let mut asmfile = File::create(out_name).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
         let output = compile(tokens, tape_size);
+        let out_name = matches.value_of("out_name").unwrap_or(name);
         let debug = matches.is_present("debugging_symbols");
         asm_and_link(&output, &name, &out_name, debug);
     }
