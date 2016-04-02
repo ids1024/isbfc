@@ -92,8 +92,8 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
     let mut ifnum = 0;
     let mut outbuffpos = 0;
     let mut outbuffsize = 0;
-    for token in tokens.iter() {
-        match *token {
+    for token in tokens {
+        match token {
             Add(offset, value) => {
                 let dest = if offset == 0 {
                     "%r12".to_string()
