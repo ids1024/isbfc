@@ -142,9 +142,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
             Set(mut offset, val) => {
                 offset += shift;
                 // Add before Set does nothing; remove it
-                if adds.contains_key(&offset) {
-                    adds.remove(&offset);
-                }
+                adds.remove(&offset);
                 sets.insert(offset, val);
             },
             Add(mut offset, mut val) => {
