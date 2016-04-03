@@ -10,6 +10,7 @@ pub enum Token {
     Add(i32, i32),
     Set(i32, i32),
     MulCopy(i32, i32, i32),
+    MulSet(i32, i32, i32),
     Scan(i32),
     LoadOut(i32, i32),
     LoadOutSet(i32),
@@ -157,8 +158,16 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     adds.insert(offset, val);
                 }
             },
-            MulCopy(src, dest, mul) =>
-                newtokens.push(MulCopy(src+shift, dest+shift, mul)),
+            MulCopy(src, dest, mul) => {
+                if let Some(&Set(dest, 0)) = newtokens.last() {
+                    newtokens.pop(); // Remove Set
+                    newtokens.push(MulSet(src+shift, dest+shift, mul));
+                } else {
+                    newtokens.push(MulCopy(src+shift, dest+shift, mul));
+                }
+            },
+            MulSet(src, dest, mul) =>
+                newtokens.push(MulSet(src+shift, dest+shift, mul)),
             // XXX Deal with shift in if, if those are ever generated
             If(offset) =>
                 newtokens.push(If(offset+shift)),

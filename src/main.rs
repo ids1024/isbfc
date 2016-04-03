@@ -140,6 +140,32 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                     output.push_str(&format!("    subq {}, {}\n", src, dest));
                 }
             },
+            MulSet(src_idx, dest_idx, mul) => {
+                let mut src = if src_idx == 0 {
+                    "%r12".to_string()
+                } else {
+                    format!("{}(%rbx)", (src_idx*8))
+                };
+                let dest = if dest_idx == 0 {
+                    "%r12".to_string()
+                } else {
+                    format!("{}(%rbx)", (dest_idx*8))
+                };
+
+                if mul != -1 && mul != 1 {
+                    output.push_str(&format!(concat!(
+                                "    movq {}, %rax\n",
+                                "    movq ${}, %rdx\n",
+                                "    mulq %rdx\n"), src, mul.abs()));
+                    src = "%rax".to_string();
+                } else if src != "%r12" && dest != "%r12" {
+                    // x86 cannot move memory to memory
+                    output.push_str(&format!("    movq {}, %rax\n", src));
+                    src = "%rax".to_string();
+                }
+
+                output.push_str(&format!("    movq {}, {}\n", src, dest));
+            },
             Set(offset, value) => {
                 if offset == 0 && value == 0 {
                     output.push_str("    xor %r12, %r12\n");
@@ -319,6 +345,8 @@ fn dump_ir(tokens: Vec<Token>) -> String {
                 output.push_str(&format!("set(offset={}, value={})\n", offset, value)),
             MulCopy(src, dest, mul) =>
                 output.push_str(&format!("mulcopy(src={}, dest={}, mul={})\n", src, dest, mul)),
+            MulSet(src, dest, mul) =>
+                output.push_str(&format!("mulset(src={}, dest={}, mul={})\n", src, dest, mul)),
             Scan(offset) =>
                 output.push_str(&format!("scan(offset={})\n", offset)),
             LoadOut(offset, add) =>

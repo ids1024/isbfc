@@ -36,6 +36,8 @@ fn main() {
                 mem[(cur as i32 + offset) as usize] += value,
             MulCopy(src, dest, mul) =>
                 mem[(cur as i32 + dest) as usize] += mem[(cur as i32 + src) as usize]*mul,
+            MulSet(src, dest, mul) =>
+                mem[(cur as i32 + dest) as usize] = mem[(cur as i32 + src) as usize]*mul,
             Set(offset, value) =>
                 mem[(cur as i32 + offset) as usize] = value,
             Move(offset) =>
