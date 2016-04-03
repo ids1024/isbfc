@@ -19,7 +19,7 @@ pub enum Token {
 use Token::*;
 
 pub fn parse(code: &str) -> Vec<Token> {
-    let mut tokens = Vec::new();
+    let mut tokens = Vec::with_capacity(code.len());
     for i in code.chars() {
         match i {
             '+' => tokens.push(Add(0, 1)),
