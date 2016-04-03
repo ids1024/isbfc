@@ -1,5 +1,6 @@
 ✓ Restructure optimizer to be simpler and faster
 ✓ Rewrite in rust
+- Rewrite algorithm to use syntax tree instead of flat vector
 - Further optimizations
 - Automated testing
 - Add README file
