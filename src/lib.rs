@@ -108,12 +108,12 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     pre_loop_sets.insert(*offset+shift, *value);
                 }
             },
-            Set(_, _) | Add(_, _) | Move(_) => {},
+            Set(..) | Add(..) | Move(_) => {},
             _ => pre_loop_sets.clear()
         }
 
         match *token {
-            Set(_, _) | Add(_, _) | Move(_) | LoadOut(_, _) | LoadOutSet(_) | Output => {},
+            Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {},
             _ => {
                if do_output {
                    newtokens.push(Output);
