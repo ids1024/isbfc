@@ -57,7 +57,7 @@ fn main() {
                 },
             EndLoop =>
                 if mem[cur] != 0 {
-                    i = *loops.last().unwrap() as usize;
+                    i = *loops.last().unwrap();
                 } else {
                     loops.pop().unwrap();
                 },
