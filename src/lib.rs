@@ -72,7 +72,7 @@ pub fn parse(code: &str) -> Vec<Token> {
     }
     
     tokens
-    }
+}
 
 pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     let mut newtokens: Vec<Token> = Vec::with_capacity(tokens.len());
