@@ -302,34 +302,7 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
 fn dump_ir(tokens: Vec<Token>) -> String {
     let mut output = String::new();
     for token in tokens.iter() {
-        match *token {
-            Output =>
-                output.push_str("output\n"),
-            Input =>
-                output.push_str("input\n"),
-            Loop =>
-                output.push_str("loop\n"),
-            EndLoop =>
-                output.push_str("endloop\n"),
-            Move(offset) =>
-                output.push_str(&format!("move(offset={})\n", offset)),
-            Add(offset, value) =>
-                output.push_str(&format!("add(offset={}, value={})\n", offset, value)),
-            Set(offset, value) =>
-                output.push_str(&format!("set(offset={}, value={})\n", offset, value)),
-            MulCopy(src, dest, mul) =>
-                output.push_str(&format!("mulcopy(src={}, dest={}, mul={})\n", src, dest, mul)),
-            Scan(offset) =>
-                output.push_str(&format!("scan(offset={})\n", offset)),
-            LoadOut(offset, add) =>
-                output.push_str(&format!("loadout(offset={}, add={})\n", offset, add)),
-            LoadOutSet(value) =>
-                output.push_str(&format!("loadoutset(value={})\n", value)),
-            If(offset) =>
-                output.push_str(&format!("if(offset={})\n", offset)),
-            EndIf =>
-                output.push_str("endif\n"),
-        }
+        output.push_str(&format!("{:?}\n", token));
     }
     output
 }

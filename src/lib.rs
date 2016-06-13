@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Token {
@@ -17,6 +18,39 @@ pub enum Token {
     EndIf,
 }
 use Token::*;
+
+impl fmt::Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Output =>
+                write!(f, "Output"),
+            Input =>
+                write!(f, "Input"),
+            Loop =>
+                write!(f, "Loop"),
+            EndLoop =>
+                write!(f, "EndLoop"),
+            Move(offset) =>
+                write!(f, "Move(offset={})", offset),
+            Add(offset, value) =>
+                write!(f, "Add(offset={}, value={})", offset, value),
+            Set(offset, value) =>
+                write!(f, "Set(offset={}, value={})", offset, value),
+            MulCopy(src, dest, mul) =>
+                write!(f, "MulCopy(src={}, dest={}, mul={})", src, dest, mul),
+            Scan(offset) =>
+                write!(f, "Scan(offset={})", offset),
+            LoadOut(offset, add) =>
+                write!(f, "LoadOut(offset={}, add={})", offset, add),
+            LoadOutSet(value) =>
+                write!(f, "LoadOutSet(value={})", value),
+            If(offset) =>
+                write!(f, "If(offset={})", offset),
+            EndIf =>
+                write!(f, "EndIf\n"),
+        }
+    }
+}
 
 pub fn parse(code: &str) -> Vec<Token> {
     let mut tokens = Vec::with_capacity(code.len());
