@@ -27,20 +27,18 @@ fn main() {
     let mut i: usize = 0;
     let mut loops: Vec<usize> = Vec::new();
     let mut mem: [i32; BUFSIZE] = [0; BUFSIZE];
-    let mut cur = BUFSIZE/2;
+    let mut cur = BUFSIZE / 2;
     let mut outbuff = String::new();
     while i < tokens.len() - 1 {
         let mut token = tokens.get(i).unwrap();
         match *token {
-            Add(offset, value) =>
-                mem[(cur as i32 + offset) as usize] += value,
-            MulCopy(src, dest, mul) =>
-                mem[(cur as i32 + dest) as usize] += mem[(cur as i32 + src) as usize]*mul,
-            Set(offset, value) =>
-                mem[(cur as i32 + offset) as usize] = value,
-            Move(offset) =>
-                cur = (cur as i32 + offset) as usize,
-            Loop =>
+            Add(offset, value) => mem[(cur as i32 + offset) as usize] += value,
+            MulCopy(src, dest, mul) => {
+                mem[(cur as i32 + dest) as usize] += mem[(cur as i32 + src) as usize] * mul
+            }
+            Set(offset, value) => mem[(cur as i32 + offset) as usize] = value,
+            Move(offset) => cur = (cur as i32 + offset) as usize,
+            Loop => {
                 if mem[cur] != 0 {
                     loops.push(i);
                 } else {
@@ -54,14 +52,16 @@ fn main() {
                             skiploop += 1;
                         }
                     }
-                },
-            EndLoop =>
+                }
+            }
+            EndLoop => {
                 if mem[cur] != 0 {
                     i = *loops.last().unwrap();
                 } else {
                     loops.pop().unwrap();
-                },
-            If(offset) =>
+                }
+            }
+            If(offset) => {
                 if mem[(cur as i32 + offset) as usize] == 0 {
                     let mut skipif = 1;
                     while i < tokens.len() && skipif > 0 {
@@ -73,21 +73,23 @@ fn main() {
                             skipif += 1;
                         }
                     }
-                },
-            EndIf => {},
-            Scan(offset) =>
+                }
+            }
+            EndIf => {}
+            Scan(offset) => {
                 while mem[cur] != 0 {
                     cur = (cur as i32 + offset) as usize;
-                },
+                }
+            }
             Input => {
                 let mut buffer = [0; 1];
                 io::stdin().take(1).read(&mut buffer).unwrap();
                 mem[cur] = buffer[0] as i32;
-            },
-            LoadOut(offset, add) =>
-                outbuff.push((mem[(cur as i32 + offset) as usize] + add) as u8 as char),
-            LoadOutSet(value) =>
-                outbuff.push(value as u8 as char),
+            }
+            LoadOut(offset, add) => {
+                outbuff.push((mem[(cur as i32 + offset) as usize] + add) as u8 as char)
+            }
+            LoadOutSet(value) => outbuff.push(value as u8 as char),
             Output => {
                 io::stdout().write(outbuff.as_bytes()).unwrap();
                 io::stdout().flush().unwrap();

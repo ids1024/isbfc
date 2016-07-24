@@ -17,32 +17,31 @@ fn main() {
         .author("Ian D. Scott <ian@iandouglasscott.com>")
         .about("Brainfuck compiler")
         .arg(Arg::with_name("output_asm")
-             .short("S")
-             .help("Assemble but do not link"))
+            .short("S")
+            .help("Assemble but do not link"))
         .arg(Arg::with_name("dump_ir")
-             .long("dumpir")
-             .help("Dump intermediate representation; for debugging"))
-        .group(ArgGroup::with_name("actions")
-             .args(&["output_asm", "dump_ir"]))
+            .long("dumpir")
+            .help("Dump intermediate representation; for debugging"))
+        .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir"]))
         .arg(Arg::with_name("debugging_symbols")
-             .short("g")
-             .help("Generate debugging information"))
+            .short("g")
+            .help("Generate debugging information"))
         .arg(Arg::with_name("out_name")
-             .short("o")
-             .help("Output file name")
-             .takes_value(true)
-             .empty_values(false)
-             .value_name("file"))
+            .short("o")
+            .help("Output file name")
+            .takes_value(true)
+            .empty_values(false)
+            .value_name("file"))
         .arg(Arg::with_name("tape_size")
-             .long("tape-size")
-             .help("Size of tape; defaults to 8192")
-             .takes_value(true)
-             .empty_values(false)
-             .value_name("bytes"))
+            .long("tape-size")
+            .help("Size of tape; defaults to 8192")
+            .takes_value(true)
+            .empty_values(false)
+            .value_name("bytes"))
         .arg(Arg::with_name("FILENAME")
-             .help("Source file to compile")
-             .required(true)
-             .index(1))
+            .help("Source file to compile")
+            .required(true)
+            .index(1))
         .get_matches();
 
     let mut tape_size = 8192;
@@ -98,7 +97,7 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                 let dest = if offset == 0 {
                     "%r12".to_string()
                 } else {
-                    format!("{}(%rbx)", (offset*8))
+                    format!("{}(%rbx)", (offset * 8))
                 };
                 if value == 1 && dest == "%r12" {
                     output.push_str("    inc %r12\n");
@@ -109,24 +108,25 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                 } else if value <= -1 {
                     output.push_str(&format!("    subq ${}, {}\n", -value, dest));
                 }
-            },
+            }
             MulCopy(src_idx, dest_idx, mul) => {
                 let mut src = if src_idx == 0 {
                     "%r12".to_string()
                 } else {
-                    format!("{}(%rbx)", (src_idx*8))
+                    format!("{}(%rbx)", (src_idx * 8))
                 };
                 let dest = if dest_idx == 0 {
                     "%r12".to_string()
                 } else {
-                    format!("{}(%rbx)", (dest_idx*8))
+                    format!("{}(%rbx)", (dest_idx * 8))
                 };
 
                 if mul != -1 && mul != 1 {
-                    output.push_str(&format!(concat!(
-                                "    movq {}, %rax\n",
-                                "    movq ${}, %rdx\n",
-                                "    mulq %rdx\n"), src, mul.abs()));
+                    output.push_str(&format!(concat!("    movq {}, %rax\n",
+                                                     "    movq ${}, %rdx\n",
+                                                     "    mulq %rdx\n"),
+                                             src,
+                                             mul.abs()));
                     src = "%rax".to_string();
                 } else if src != "%r12" && dest != "%r12" {
                     // x86 cannot move memory to memory
@@ -139,88 +139,87 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                 } else {
                     output.push_str(&format!("    subq {}, {}\n", src, dest));
                 }
-            },
+            }
             Set(offset, value) => {
                 if offset == 0 && value == 0 {
                     output.push_str("    xor %r12, %r12\n");
                 } else if offset == 0 {
                     output.push_str(&format!("    movq ${}, %r12\n", value));
                 } else {
-                    output.push_str(&format!("    movq ${}, {}(%rbx)\n", value, offset*8));
+                    output.push_str(&format!("    movq ${}, {}(%rbx)\n", value, offset * 8));
                 }
-            },
+            }
             Move(offset) => {
                 if offset != 0 {
                     output.push_str("    movq %r12, (%rbx)\n");
                     if offset > 0 {
-                        output.push_str(&format!("    addq ${}, %rbx\n", offset*8));
+                        output.push_str(&format!("    addq ${}, %rbx\n", offset * 8));
                     } else {
-                        output.push_str(&format!("    subq ${}, %rbx\n", -offset*8));
+                        output.push_str(&format!("    subq ${}, %rbx\n", -offset * 8));
                     }
                     output.push_str("    movq (%rbx), %r12\n");
                 }
-            },
+            }
             Loop => {
                 loopnum += 1;
                 loops.push(loopnum);
-                output.push_str(&format!(concat!(
-                        "    jmp endloop{}\n",
-                        "    loop{}:\n"),
-                        loopnum, loopnum));
-            },
+                output.push_str(&format!(concat!("    jmp endloop{}\n", "    loop{}:\n"),
+                                         loopnum,
+                                         loopnum));
+            }
             EndLoop => {
                 let curloop = loops.pop().unwrap();
-                output.push_str(&format!(concat!(
-                            "    endloop{}:\n",
-                            "    test %r12, %r12\n",
-                            "    jnz loop{}\n"),
-                            curloop, curloop))
-            },
+                output.push_str(&format!(concat!("    endloop{}:\n",
+                                                 "    test %r12, %r12\n",
+                                                 "    jnz loop{}\n"),
+                                         curloop,
+                                         curloop))
+            }
             If(offset) => {
                 ifnum += 1;
                 ifs.push(ifnum);
                 if offset == 0 {
                     output.push_str("    test %r12, %r12\n");
                 } else {
-                    output.push_str(&format!("    cmpq $0, {}(%rbx)\n", offset*8));
+                    output.push_str(&format!("    cmpq $0, {}(%rbx)\n", offset * 8));
                 }
                 output.push_str(&format!("    jz endif{}\n", ifnum));
-            },
-            EndIf =>
-                output.push_str(&format!("    endif{}:\n", ifs.pop().unwrap())),
+            }
+            EndIf => output.push_str(&format!("    endif{}:\n", ifs.pop().unwrap())),
             Scan(offset) => {
                 // Slighly more optimal than normal loop and move
                 loopnum += 1;
-                output.push_str(&format!(concat!(
-                            "    movq %r12, (%rbx)\n",
-                            "    jmp endloop{}\n",
-                            "    loop{}:\n"),
-                            loopnum, loopnum));
+                output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
+                                                 "    jmp endloop{}\n",
+                                                 "    loop{}:\n"),
+                                         loopnum,
+                                         loopnum));
                 if offset > 0 {
-                    output.push_str(&format!("    addq ${}, %rbx\n", offset*8));
+                    output.push_str(&format!("    addq ${}, %rbx\n", offset * 8));
                 } else {
-                    output.push_str(&format!("    subq ${}, %rbx\n", -offset*8));
+                    output.push_str(&format!("    subq ${}, %rbx\n", -offset * 8));
                 }
-                output.push_str(&format!(concat!(
-                            "    endloop{}:\n",
-                            "    cmp $0, (%rbx)\n",
-                            "    jnz loop{}\n",
-                            "    movq (%rbx), %r12\n"),
-                            loopnum, loopnum));
-            },
-            Input =>
+                output.push_str(&format!(concat!("    endloop{}:\n",
+                                                 "    cmp $0, (%rbx)\n",
+                                                 "    jnz loop{}\n",
+                                                 "    movq (%rbx), %r12\n"),
+                                         loopnum,
+                                         loopnum));
+            }
+            Input => {
                 output.push_str(concat!("\n    xor %rax, %rax\n",
                                         "    xor %rdi, %rdi\n",
                                         "    movq %rbx, %rsi\n",
                                         "    movq $1, %rdx\n",
                                         "    syscall\n",
-                                        "    movq (%rbx), %r12\n\n")),
+                                        "    movq (%rbx), %r12\n\n"))
+            }
             LoadOut(offset, add) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
                 if offset == 0 {
                     output.push_str(&format!("    movq %r12, {}\n", outaddr));
                 } else {
-                    output.push_str(&format!("    movq {}(%rbx), %rax\n", offset*8));
+                    output.push_str(&format!("    movq {}(%rbx), %rax\n", offset * 8));
                     output.push_str(&format!("    movq %rax, {}\n", outaddr));
                 }
                 if add > 0 {
@@ -229,20 +228,19 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                     output.push_str(&format!("    subb ${}, {}\n", -add, outaddr));
                 }
                 outbuffpos += 1;
-            },
+            }
             LoadOutSet(value) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
                 output.push_str(&format!("    movq ${}, {}\n", value, outaddr));
                 outbuffpos += 1;
-            },
+            }
             Output => {
-                output.push_str(&format!(concat!(
-                            "    movq $1, %rax\n",
-                            "    movq $1, %rdi\n",
-                            "    movq $strbuff, %rsi\n",
-                            "    movq ${}, %rdx\n",
-                            "    syscall\n\n"),
-                            outbuffpos));
+                output.push_str(&format!(concat!("    movq $1, %rax\n",
+                                                 "    movq $1, %rdi\n",
+                                                 "    movq $strbuff, %rsi\n",
+                                                 "    movq ${}, %rdx\n",
+                                                 "    syscall\n\n"),
+                                         outbuffpos));
 
                 if outbuffsize < outbuffpos + 8 {
                     outbuffsize = outbuffpos + 8;
@@ -257,17 +255,19 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                             "    movq $0, %rdi\n",
                             "    syscall\n"));
 
-    format!(concat!(
-            ".section .bss\n",
-            "    .lcomm strbuff, {outbuffsize}\n",
-            "    .lcomm mem, {}\n",
-            "    .set startidx, mem + {}\n",
-            ".section .text\n",
-            ".global _start\n",
-            "_start:\n",
-            "    xor %r12, %r12\n",
-            "    movq $startidx, %rbx\n\n{}"),
-            tape_size, tape_size/2, output, outbuffsize=outbuffsize)
+    format!(concat!(".section .bss\n",
+                    "    .lcomm strbuff, {outbuffsize}\n",
+                    "    .lcomm mem, {}\n",
+                    "    .set startidx, mem + {}\n",
+                    ".section .text\n",
+                    ".global _start\n",
+                    "_start:\n",
+                    "    xor %r12, %r12\n",
+                    "    movq $startidx, %rbx\n\n{}"),
+            tape_size,
+            tape_size / 2,
+            output,
+            outbuffsize = outbuffsize)
 }
 
 
@@ -294,7 +294,8 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
             .arg(format!("{}.o", name))
             .arg("-o")
             .arg(out_name)
-            .spawn().unwrap();
+            .spawn()
+            .unwrap();
     }
 }
 

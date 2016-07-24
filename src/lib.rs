@@ -22,32 +22,21 @@ use Token::*;
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Output =>
-                write!(f, "Output"),
-            Input =>
-                write!(f, "Input"),
-            Loop =>
-                write!(f, "Loop"),
-            EndLoop =>
-                write!(f, "EndLoop"),
-            Move(offset) =>
-                write!(f, "Move(offset={})", offset),
-            Add(offset, value) =>
-                write!(f, "Add(offset={}, value={})", offset, value),
-            Set(offset, value) =>
-                write!(f, "Set(offset={}, value={})", offset, value),
-            MulCopy(src, dest, mul) =>
-                write!(f, "MulCopy(src={}, dest={}, mul={})", src, dest, mul),
-            Scan(offset) =>
-                write!(f, "Scan(offset={})", offset),
-            LoadOut(offset, add) =>
-                write!(f, "LoadOut(offset={}, add={})", offset, add),
-            LoadOutSet(value) =>
-                write!(f, "LoadOutSet(value={})", value),
-            If(offset) =>
-                write!(f, "If(offset={})", offset),
-            EndIf =>
-                write!(f, "EndIf\n"),
+            Output => write!(f, "Output"),
+            Input => write!(f, "Input"),
+            Loop => write!(f, "Loop"),
+            EndLoop => write!(f, "EndLoop"),
+            Move(offset) => write!(f, "Move(offset={})", offset),
+            Add(offset, value) => write!(f, "Add(offset={}, value={})", offset, value),
+            Set(offset, value) => write!(f, "Set(offset={}, value={})", offset, value),
+            MulCopy(src, dest, mul) => {
+                write!(f, "MulCopy(src={}, dest={}, mul={})", src, dest, mul)
+            }
+            Scan(offset) => write!(f, "Scan(offset={})", offset),
+            LoadOut(offset, add) => write!(f, "LoadOut(offset={}, add={})", offset, add),
+            LoadOutSet(value) => write!(f, "LoadOutSet(value={})", value),
+            If(offset) => write!(f, "If(offset={})", offset),
+            EndIf => write!(f, "EndIf\n"),
         }
     }
 }
@@ -66,11 +55,11 @@ pub fn parse(code: &str) -> Vec<Token> {
             '.' => {
                 tokens.push(LoadOut(0, 0));
                 tokens.push(Output);
-            },
-            _ => ()
+            }
+            _ => (),
         };
     }
-    
+
     tokens
 }
 
@@ -85,7 +74,8 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     let mut pre_loop_sets: BTreeMap<i32, i32> = BTreeMap::new();
 
     for token in tokens.iter() {
-        if *token == EndLoop && newtokens.last() == Some(&Loop) && shift == 0 && adds.contains_key(&0) {
+        if *token == EndLoop && newtokens.last() == Some(&Loop) && shift == 0 &&
+           adds.contains_key(&0) {
             if adds.len() == 1 {
                 newtokens.pop(); // Remove Loop
                 if !sets.is_empty() {
@@ -101,7 +91,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 }
                 pre_loop_sets.clear();
                 adds.clear();
-                continue
+                continue;
             } else if adds.get(&0) == Some(&-1) {
                 newtokens.pop(); // Remove Loop
                 if !sets.is_empty() {
@@ -130,7 +120,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 adds.clear();
                 sets.clear();
                 sets.insert(0, 0);
-                continue
+                continue;
             }
         }
 
@@ -138,40 +128,40 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
             Loop => {
                 pre_loop_sets.clear();
                 for (offset, value) in sets.iter() {
-                    pre_loop_sets.insert(*offset+shift, *value);
+                    pre_loop_sets.insert(*offset + shift, *value);
                 }
-            },
-            Set(..) | Add(..) | Move(_) => {},
-            _ => pre_loop_sets.clear()
+            }
+            Set(..) | Add(..) | Move(_) => {}
+            _ => pre_loop_sets.clear(),
         }
 
         match *token {
-            Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {},
+            Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {}
             _ => {
-               if do_output {
-                   newtokens.push(Output);
-                   do_output = false;
-               }
+                if do_output {
+                    newtokens.push(Output);
+                    do_output = false;
+                }
 
-               for (offset, value) in sets.iter() {
-                  newtokens.push(Set(*offset, *value));
-               }
-               for (offset, value) in adds.iter() {
-                  newtokens.push(Add(*offset, *value));
-               }
-               sets.clear();
-               adds.clear();
+                for (offset, value) in sets.iter() {
+                    newtokens.push(Set(*offset, *value));
+                }
+                for (offset, value) in adds.iter() {
+                    newtokens.push(Add(*offset, *value));
+                }
+                sets.clear();
+                adds.clear();
             }
         }
 
         if shift != 0 {
-           match *token {
-               Loop | Input | Scan(_) => {
-                   newtokens.push(Move(shift));
-                   shift = 0;
-               },
-               _ => {}
-           }
+            match *token {
+                Loop | Input | Scan(_) => {
+                    newtokens.push(Move(shift));
+                    shift = 0;
+                }
+                _ => {}
+            }
         }
 
         match *token {
@@ -180,7 +170,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 // Add before Set does nothing; remove it
                 adds.remove(&offset);
                 sets.insert(offset, val);
-            },
+            }
             Add(mut offset, mut val) => {
                 offset += shift;
                 if sets.contains_key(&offset) {
@@ -190,16 +180,12 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     val = adds.get(&offset).unwrap_or(&0) + val;
                     adds.insert(offset, val);
                 }
-            },
-            MulCopy(src, dest, mul) =>
-                newtokens.push(MulCopy(src+shift, dest+shift, mul)),
+            }
+            MulCopy(src, dest, mul) => newtokens.push(MulCopy(src + shift, dest + shift, mul)),
             // XXX Deal with shift in if, if those are ever generated
-            If(offset) =>
-                newtokens.push(If(offset+shift)),
-            Move(offset) =>
-                shift += offset,
-            Output =>
-                do_output = true,
+            If(offset) => newtokens.push(If(offset + shift)),
+            Move(offset) => shift += offset,
+            Output => do_output = true,
             LoadOut(mut offset, add) => {
                 offset += shift;
                 if sets.contains_key(&offset) {
@@ -207,9 +193,10 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 } else {
                     newtokens.push(LoadOut(offset, adds.get(&offset).unwrap_or(&0) + add));
                 }
-            },
+            }
             EndLoop => {
-                if newtokens.last() == Some(&Loop) && shift != 0 && sets.is_empty() && adds.is_empty() {
+                if newtokens.last() == Some(&Loop) && shift != 0 && sets.is_empty() &&
+                   adds.is_empty() {
                     newtokens.pop(); // Remove StartLoop
                     newtokens.push(Scan(shift));
                 } else {
@@ -219,9 +206,8 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     newtokens.push(EndLoop);
                 }
                 shift = 0;
-            },
-            EndIf | LoadOutSet(_) | Loop | Input | Scan(_) =>
-                newtokens.push(*token),
+            }
+            EndIf | LoadOutSet(_) | Loop | Input | Scan(_) => newtokens.push(*token),
         }
     }
 
