@@ -73,20 +73,8 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
     // in recursion, and the optimizer never exits.
     let mut adds: BTreeMap<i32, i32> = BTreeMap::new();
     let mut sets: BTreeMap<i32, i32> = BTreeMap::new();
-    let mut pre_loop_sets: BTreeMap<i32, i32> = BTreeMap::new();
 
     for token in tokens.iter() {
-        match *token {
-            Loop(_) => {
-                pre_loop_sets.clear();
-                for (offset, value) in sets.iter() {
-                    pre_loop_sets.insert(*offset + shift, *value);
-                }
-            }
-            Set(..) | Add(..) | Move(_) => {}
-            _ => pre_loop_sets.clear(),
-        }
-
         match *token {
             Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {}
             _ => {
