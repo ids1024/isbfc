@@ -135,9 +135,6 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
                 }
             }
             Loop(ref contents) => {
-                if contents.len() == 0 {
-                    continue;
-                }
                 newtokens.push(Loop(_optimize(contents)))
             }
             LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
