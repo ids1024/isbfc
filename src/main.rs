@@ -63,7 +63,7 @@ fn main() {
     file.read_to_string(&mut code).unwrap();
 
     let tokens = parse(&code);
-    let tokens = optimize(&tokens);
+    let tokens = optimize(tokens);
 
     if matches.is_present("dump_ir") {
         let output = dump_ir(tokens);

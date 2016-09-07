@@ -68,7 +68,7 @@ fn main() {
     file.read_to_string(&mut code).unwrap();
 
     let tokens = parse(code.as_str());
-    let tokens = optimize(&tokens);
+    let tokens = optimize(tokens);
 
     let mut mem: [i32; BUFSIZE] = [0; BUFSIZE];
     let mut cur = BUFSIZE / 2;
