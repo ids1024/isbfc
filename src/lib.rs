@@ -50,7 +50,9 @@ fn _parse(chars: &mut std::str::Chars) -> Vec<Token> {
             '>' => tokens.push(Move(1)),
             '<' => tokens.push(Move(-1)),
             '[' => tokens.push(Loop(_parse(chars))),
-            ']' => { break; }
+            ']' => {
+                break;
+            }
             ',' => tokens.push(Input),
             '.' => {
                 tokens.push(LoadOut(0, 0));
@@ -151,15 +153,15 @@ pub fn optimize(tokens: &Vec<Token>) -> Vec<Token> {
                 newtokens.push(Loop(optimize(contents)))
             }
             LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
-	    Input => newtokens.push(Input),
-	    Scan(offset) => newtokens.push(Scan(offset + shift)),
+            Input => newtokens.push(Input),
+            Scan(offset) => newtokens.push(Scan(offset + shift)),
         }
     }
 
     // Any remaining add/set/shift is ignored, as it would have no effect
-    //if do_output {
+    // if do_output {
     //    newtokens.push(Output);
-    //}
+    // }
 
     // Optimize recursively
     if &newtokens != tokens {

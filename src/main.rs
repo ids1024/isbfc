@@ -120,7 +120,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 };
 
                 if mul != -1 && mul != 1 {
-                   state.output.push_str(&format!(concat!("    movq {}, %rax\n",
+                    state.output.push_str(&format!(concat!("    movq {}, %rax\n",
                                                            "    movq ${}, %rdx\n",
                                                            "    mulq %rdx\n"),
                                                    src,
@@ -162,16 +162,16 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 state.loopnum += 1;
                 let curloop = state.loopnum;
                 state.output.push_str(&format!(concat!("    jmp endloop{}\n", "    loop{}:\n"),
-                                         curloop,
-                                         curloop));
+                                               curloop,
+                                               curloop));
 
                 compile_iter(state, content);
 
                 state.output.push_str(&format!(concat!("    endloop{}:\n",
-                                                 "    test %r12, %r12\n",
-                                                 "    jnz loop{}\n"),
-                                         curloop,
-                                         curloop))
+                                                       "    test %r12, %r12\n",
+                                                       "    jnz loop{}\n"),
+                                               curloop,
+                                               curloop))
             }
             If(offset, content) => {
                 state.ifnum += 1;
@@ -183,7 +183,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 }
                 state.output.push_str(&format!("    jz endif{}\n", curif));
 
-                compile_iter(state, content); 
+                compile_iter(state, content);
 
                 state.output.push_str(&format!("    endif{}:\n", curif))
             }
@@ -191,29 +191,29 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 // Slighly more optimal than normal loop and move
                 state.loopnum += 1;
                 state.output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
-                                                 "    jmp endloop{}\n",
-                                                 "    loop{}:\n"),
-                                         state.loopnum,
-                                         state.loopnum));
+                                                       "    jmp endloop{}\n",
+                                                       "    loop{}:\n"),
+                                               state.loopnum,
+                                               state.loopnum));
                 if offset > 0 {
                     state.output.push_str(&format!("    addq ${}, %rbx\n", offset * 8));
                 } else {
                     state.output.push_str(&format!("    subq ${}, %rbx\n", -offset * 8));
                 }
                 state.output.push_str(&format!(concat!("    endloop{}:\n",
-                                                 "    cmp $0, (%rbx)\n",
-                                                 "    jnz loop{}\n",
-                                                 "    movq (%rbx), %r12\n"),
-                                         state.loopnum,
-                                         state.loopnum));
+                                                       "    cmp $0, (%rbx)\n",
+                                                       "    jnz loop{}\n",
+                                                       "    movq (%rbx), %r12\n"),
+                                               state.loopnum,
+                                               state.loopnum));
             }
             Input => {
                 state.output.push_str(concat!("\n    xor %rax, %rax\n",
-                                        "    xor %rdi, %rdi\n",
-                                        "    movq %rbx, %rsi\n",
-                                        "    movq $1, %rdx\n",
-                                        "    syscall\n",
-                                        "    movq (%rbx), %r12\n\n"))
+                                              "    xor %rdi, %rdi\n",
+                                              "    movq %rbx, %rsi\n",
+                                              "    movq $1, %rdx\n",
+                                              "    syscall\n",
+                                              "    movq (%rbx), %r12\n\n"))
             }
             LoadOut(offset, add) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
@@ -237,11 +237,11 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
             }
             Output => {
                 state.output.push_str(&format!(concat!("    movq $1, %rax\n",
-                                                 "    movq $1, %rdi\n",
-                                                 "    movq $strbuff, %rsi\n",
-                                                 "    movq ${}, %rdx\n",
-                                                 "    syscall\n\n"),
-                                         outbuffpos));
+                                                       "    movq $1, %rdi\n",
+                                                       "    movq $strbuff, %rsi\n",
+                                                       "    movq ${}, %rdx\n",
+                                                       "    syscall\n\n"),
+                                               outbuffpos));
 
                 if state.outbuffsize < outbuffpos + 8 {
                     state.outbuffsize = outbuffpos + 8;
@@ -259,7 +259,7 @@ fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
         output: String::new(),
         loopnum: 0,
         ifnum: 0,
-        outbuffsize: 0
+        outbuffsize: 0,
     };
 
     compile_iter(&mut state, tokens);
@@ -315,19 +315,19 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
 
 fn dump_ir_iter(output: &mut String, tokens: Vec<Token>, indent_level: usize) {
     let indent = String::from_utf8(vec![b' '; indent_level * 4]).unwrap();
-     for token in tokens {
+    for token in tokens {
         match token {
             Loop(content) => {
                 output.push_str(&format!("{}Loop(content=[\n", indent));
-                dump_ir_iter(output, content, indent_level+1);
+                dump_ir_iter(output, content, indent_level + 1);
                 output.push_str(&format!("{}])\n", indent));
-            },
+            }
             If(offset, content) => {
                 output.push_str(&format!("{}If(offset={}, content=[\n", offset, indent));
-                dump_ir_iter(output, content, indent_level+1);
+                dump_ir_iter(output, content, indent_level + 1);
                 output.push_str(&format!("{}])\n", indent));
-            },
-            _ => output.push_str(&format!("{}{:?}\n", indent, token))
+            }
+            _ => output.push_str(&format!("{}{:?}\n", indent, token)),
         }
     }
 }
