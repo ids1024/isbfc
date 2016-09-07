@@ -134,9 +134,7 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
                     newtokens.push(LoadOut(offset, adds.get(&offset).unwrap_or(&0) + add));
                 }
             }
-            Loop(ref contents) => {
-                newtokens.push(Loop(_optimize(contents)))
-            }
+            Loop(ref contents) => newtokens.push(Loop(_optimize(contents))),
             LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
             Input => newtokens.push(Input),
             Scan(offset) => newtokens.push(Scan(offset + shift)),
@@ -163,7 +161,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     let mut oldtokens = tokens;
     let mut newtokens = _optimize(&oldtokens);
     while newtokens != oldtokens {
-	oldtokens = newtokens;
+        oldtokens = newtokens;
         newtokens = _optimize(&oldtokens);
     }
     newtokens
