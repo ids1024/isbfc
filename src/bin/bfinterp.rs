@@ -16,21 +16,21 @@ use isbfc::optimize;
 
 const BUFSIZE: usize = 8192;
 
-fn interp_iter(mem: &mut [i32; BUFSIZE], cur: &mut usize, outbuff: &mut String, tokens: Vec<Token>) {
+fn interp_iter(mem: &mut [i32; BUFSIZE], cur: &mut usize, outbuff: &mut String, tokens: &Vec<Token>) {
     for token in tokens {
-        match token {
+        match *token {
             Add(offset, value) => mem[(*cur as i32 + offset) as usize] += value,
             MulCopy(src, dest, mul) => {
                 mem[(*cur as i32 + dest) as usize] += mem[(*cur as i32 + src) as usize] * mul
             }
             Set(offset, value) => mem[(*cur as i32 + offset) as usize] = value,
             Move(offset) => *cur = (*cur as i32 + offset) as usize,
-            Loop(content) => {
-                if mem[*cur] != 0 {
+            Loop(ref content) => {
+                while mem[*cur] != 0 {
 		    interp_iter(mem, cur, outbuff, content);
                 }
             }
-            If(offset, content) => {
+            If(offset, ref content) => {
                 if mem[(*cur as i32 + offset) as usize] != 0 {
 		    interp_iter(mem, cur, outbuff, content);
                 }
@@ -71,5 +71,5 @@ fn main() {
     let mut cur = BUFSIZE / 2;
     let mut outbuff = String::new();
 
-    interp_iter(&mut mem, &mut cur, &mut outbuff, tokens);
+    interp_iter(&mut mem, &mut cur, &mut outbuff, &tokens);
 }
