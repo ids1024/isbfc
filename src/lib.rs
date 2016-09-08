@@ -136,9 +136,7 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
                 }
             }
             Loop(ref contents) => {
-                if let Some(token) = _optimize_loop(contents, &mut sets, &mut adds, &mut shift) {
-                    newtokens.push(token);
-                }
+                _optimize_loop(contents, &mut newtokens, &mut sets, &mut adds, &mut shift)
             }
             LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
             Input => newtokens.push(Input),
@@ -154,20 +152,18 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
 }
 
 fn _optimize_loop(tokens: &Vec<Token>,
+                  outer_tokens: &mut Vec<Token>,
                   outer_sets: &mut BTreeMap<i32, i32>,
                   outer_adds: &mut BTreeMap<i32, i32>,
-                  outer_shift: &mut i32)
-                  -> Option<Token> {
+                  outer_shift: &mut i32) {
     let (mut newtokens, sets, adds, shift) = _optimize(tokens);
 
     if shift != 0 && sets.is_empty() && adds.is_empty() && newtokens.is_empty() {
-        Some(Scan(shift))
+        outer_tokens.push(Scan(shift));
     } else if shift == 0 && newtokens.is_empty() && adds.contains_key(&0) && adds.len() == 1 &&
               sets.is_empty() {
         // TODO: Implement when !sets.is_empty()
         outer_sets.insert(0, 0);
-
-        None
     } else {
         for (offset, value) in sets.iter() {
             newtokens.push(Set(*offset, *value));
@@ -179,7 +175,7 @@ fn _optimize_loop(tokens: &Vec<Token>,
             newtokens.push(Move(shift));
         }
 
-        Some(Loop(newtokens))
+        outer_tokens.push(Loop(newtokens));
     }
 }
 
