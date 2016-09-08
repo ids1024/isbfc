@@ -49,6 +49,15 @@ struct OptimizeState {
 }
 
 impl OptimizeState {
+    fn new() -> OptimizeState {
+        OptimizeState {
+            tokens: Vec::new(),
+            adds: BTreeMap::new(),
+            sets: BTreeMap::new(),
+            shift: 0,
+        }
+    }
+
     fn apply_shift(&mut self) {
         if self.shift != 0 {
             self.tokens.push(Move(self.shift));
@@ -98,13 +107,7 @@ fn _parse(chars: &mut std::str::Chars) -> Vec<Token> {
 
 fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
     let mut do_output = false;
-
-    let mut state = OptimizeState {
-        tokens: Vec::with_capacity(tokens.len()),
-        adds: BTreeMap::new(),
-        sets: BTreeMap::new(),
-        shift: 0,
-    };
+    let mut state = OptimizeState::new();
 
     for token in tokens.iter() {
         match *token {
