@@ -39,6 +39,7 @@ impl fmt::Debug for Token {
 
 use Token::*;
 
+#[derive(Default)]
 struct OptimizeState {
     tokens: Vec<Token>,
     // With HashMap, the order sometimes switches
@@ -49,15 +50,6 @@ struct OptimizeState {
 }
 
 impl OptimizeState {
-    fn new() -> OptimizeState {
-        OptimizeState {
-            tokens: Vec::new(),
-            adds: BTreeMap::new(),
-            sets: BTreeMap::new(),
-            shift: 0,
-        }
-    }
-
     fn apply_shift(&mut self) {
         if self.shift != 0 {
             self.tokens.push(Move(self.shift));
@@ -107,7 +99,7 @@ fn _parse(chars: &mut std::str::Chars) -> Vec<Token> {
 
 fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
     let mut do_output = false;
-    let mut state = OptimizeState::new();
+    let mut state = OptimizeState::default();
 
     for token in tokens.iter() {
         match *token {
