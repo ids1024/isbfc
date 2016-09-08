@@ -7,3 +7,4 @@
 - JIT
 - Make optimizer mutate data and not recurse
 - -O argument for optimization levels
+- Document code better
