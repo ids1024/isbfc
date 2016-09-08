@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::fmt;
+use std::iter::FromIterator;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Token {
@@ -178,6 +179,28 @@ fn _optimize_loop(tokens: &Vec<Token>,
         } else {
             outer_sets.insert(0, 0);
         }
+    } else if shift == 0 && newtokens.is_empty() && adds.get(&0) == Some(&-1) {
+        let contents = adds.iter().filter_map(|(offset, value)| {
+            if *offset != 0 {
+                let src = 0;
+                let dest = *offset;
+                let mul = *value;
+                Some(MulCopy(src, dest, mul))
+            } else {
+                None
+            }
+        });
+
+        if !sets.is_empty() {
+            let iftokens = Vec::from_iter(sets.iter()
+                .map(|(offset, value)| Set(*offset, *value))
+                .chain(contents));
+            outer_tokens.push(If(0, iftokens));
+        } else {
+            outer_tokens.extend(contents);
+        }
+
+        outer_sets.insert(0, 0);
     } else {
         for (offset, value) in sets.iter() {
             newtokens.push(Set(*offset, *value));
