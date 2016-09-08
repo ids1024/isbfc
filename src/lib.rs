@@ -70,10 +70,10 @@ impl OptimizeState {
     }
 
     fn apply_adds_sets(&mut self) {
-        for (offset, value) in self.sets.iter() {
+        for (offset, value) in &self.sets {
             self.tokens.push(Set(*offset, *value));
         }
-        for (offset, value) in self.adds.iter() {
+        for (offset, value) in &self.adds {
             self.tokens.push(Add(*offset, *value));
         }
         self.sets.clear();
@@ -113,7 +113,7 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
     let mut do_output = false;
     let mut state = OptimizeState::default();
 
-    for token in tokens.iter() {
+    for token in tokens {
         match *token {
             Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {}
             _ => {
@@ -155,7 +155,7 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
             }
             If(offset, ref contents) => {
                 let mut newcontents = Vec::new();
-                for i in contents.iter() {
+                for i in contents {
                     newcontents.push(match *i {
                         Set(offset, value) => Set(offset + state.shift, value),
                         MulCopy(src, dest, mul) => {
@@ -200,7 +200,7 @@ fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
               inner.adds.len() == 1 {
         if !inner.sets.is_empty() {
             let mut iftokens = Vec::new();
-            for (offset, value) in inner.sets.iter() {
+            for (offset, value) in &inner.sets {
                 iftokens.push(Set(*offset, *value));
             }
             iftokens.push(Set(0, 0));
