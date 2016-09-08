@@ -128,6 +128,7 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
                 for i in contents.iter() {
                     newcontents.push(match *i {
                         Set(offset, value) => Set(offset + shift, value),
+                        MulCopy(src, dest, mul) => MulCopy(src + shift, dest + shift, mul),
                         _ => unreachable!(),
                     });
                 }
