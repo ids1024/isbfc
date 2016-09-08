@@ -323,7 +323,7 @@ fn dump_ir_iter(output: &mut String, tokens: Vec<Token>, indent_level: usize) {
                 output.push_str(&format!("{}])\n", indent));
             }
             If(offset, content) => {
-                output.push_str(&format!("{}If(offset={}, content=[\n", offset, indent));
+                output.push_str(&format!("{}If(offset={}, content=[\n", indent, offset));
                 dump_ir_iter(output, content, indent_level + 1);
                 output.push_str(&format!("{}])\n", indent));
             }
