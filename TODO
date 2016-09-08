@@ -8,3 +8,5 @@
 - Make optimizer mutate data and not recurse
 - -O argument for optimization levels
 - Document code better
+- Brainfuck debugging symbols
+  - Debugging in interpreter by printing tokens?
