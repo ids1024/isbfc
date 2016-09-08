@@ -136,10 +136,10 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
                 }
             }
             Loop(ref contents) => {
-                if let Some(token) =_optimize_loop(contents, &mut sets, &mut adds, &mut shift) {
+                if let Some(token) = _optimize_loop(contents, &mut sets, &mut adds, &mut shift) {
                     newtokens.push(token);
                 }
-            },
+            }
             LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
             Input => newtokens.push(Input),
             Scan(offset) => newtokens.push(Scan(offset + shift)),
@@ -153,19 +153,22 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
     (newtokens, sets, adds, shift)
 }
 
-fn _optimize_loop(tokens: &Vec<Token>, outer_sets: &mut BTreeMap<i32, i32>, outer_adds: &mut BTreeMap<i32, i32>, outer_shift: &mut i32) -> Option<Token> {
+fn _optimize_loop(tokens: &Vec<Token>,
+                  outer_sets: &mut BTreeMap<i32, i32>,
+                  outer_adds: &mut BTreeMap<i32, i32>,
+                  outer_shift: &mut i32)
+                  -> Option<Token> {
     let (mut newtokens, sets, adds, shift) = _optimize(tokens);
 
     if shift != 0 && sets.is_empty() && adds.is_empty() && newtokens.is_empty() {
         Some(Scan(shift))
-    }
-    else if shift == 0 && newtokens.is_empty() && adds.contains_key(&0) && adds.len() == 1 && sets.is_empty() {
+    } else if shift == 0 && newtokens.is_empty() && adds.contains_key(&0) && adds.len() == 1 &&
+              sets.is_empty() {
         // TODO: Implement when !sets.is_empty()
         outer_sets.insert(0, 0);
 
         None
-    }
-    else {
+    } else {
         for (offset, value) in sets.iter() {
             newtokens.push(Set(*offset, *value));
         }
