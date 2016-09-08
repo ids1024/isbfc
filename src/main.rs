@@ -66,7 +66,7 @@ fn main() {
     let tokens = optimize(tokens);
 
     if matches.is_present("dump_ir") {
-        let output = dump_ir(tokens);
+        let output = format!("{:#?}\n", tokens);
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
             irfile.write_all(&output.into_bytes()).unwrap();
@@ -311,8 +311,4 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
             .spawn()
             .unwrap();
     }
-}
-
-fn dump_ir(tokens: Vec<Token>) -> String {
-    format!("{:#?}\n", tokens)
 }
