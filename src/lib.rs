@@ -115,7 +115,7 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
 
     for token in tokens {
         match *token {
-            Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {}
+            Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output | MulCopy(..) => {}
             _ => {
                 if do_output {
                     state.tokens.push(Output);
@@ -150,8 +150,15 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
                     state.adds.insert(offset, val);
                 }
             }
-            MulCopy(src, dest, mul) => {
-                state.tokens.push(MulCopy(src + state.shift, dest + state.shift, mul))
+            MulCopy(mut src, mut dest, mul) => {
+                src += state.shift;
+                dest += state.shift;
+                if let Some(value) = state.sets.remove(&src) {
+                    state.sets.insert(dest, value * mul);
+                } else {
+                    state.apply_adds_sets();
+                    state.tokens.push(MulCopy(src, dest, mul));
+                }
             }
             If(offset, ref contents) => {
                 let mut newcontents = Vec::new();
