@@ -16,7 +16,6 @@ pub enum Token {
     LoadOutSet(i32),
     If(i32, Vec<Token>),
 }
-use Token::*;
 
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -38,6 +37,8 @@ impl fmt::Debug for Token {
     }
 }
 
+use Token::*;
+
 struct OptimizeState {
     tokens: Vec<Token>,
     // With HashMap, the order sometimes switches
@@ -45,6 +46,26 @@ struct OptimizeState {
     adds: BTreeMap<i32, i32>,
     sets: BTreeMap<i32, i32>,
     shift: i32,
+}
+
+impl OptimizeState {
+    fn apply_shift(&mut self) {
+        if self.shift != 0 {
+            self.tokens.push(Move(self.shift));
+            self.shift = 0;
+        }
+    }
+
+    fn apply_adds_sets(&mut self) {
+        for (offset, value) in self.sets.iter() {
+            self.tokens.push(Set(*offset, *value));
+        }
+        for (offset, value) in self.adds.iter() {
+            self.tokens.push(Add(*offset, *value));
+        }
+        self.sets.clear();
+        self.adds.clear();
+    }
 }
 
 pub fn parse(code: &str) -> Vec<Token> {
@@ -94,25 +115,15 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
                     do_output = false;
                 }
 
-                for (offset, value) in state.sets.iter() {
-                    state.tokens.push(Set(*offset, *value));
-                }
-                for (offset, value) in state.adds.iter() {
-                    state.tokens.push(Add(*offset, *value));
-                }
-                state.sets.clear();
-                state.adds.clear();
+                state.apply_adds_sets();
             }
         }
 
-        if state.shift != 0 {
-            match *token {
-                Loop(_) | Input | Scan(_) => {
-                    state.tokens.push(Move(state.shift));
-                    state.shift = 0;
-                }
-                _ => {}
+        match *token {
+            Loop(_) | Input | Scan(_) => {
+                state.apply_shift();
             }
+            _ => {}
         }
 
         match *token {
@@ -214,15 +225,8 @@ fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
 
         outer.sets.insert(0, 0);
     } else {
-        for (offset, value) in inner.sets.iter() {
-            inner.tokens.push(Set(*offset, *value));
-        }
-        for (offset, value) in inner.adds.iter() {
-            inner.tokens.push(Add(*offset, *value));
-        }
-        if inner.shift != 0 {
-            inner.tokens.push(Move(inner.shift));
-        }
+        inner.apply_adds_sets();
+        inner.apply_shift();
 
         outer.tokens.push(Loop(inner.tokens));
     }
