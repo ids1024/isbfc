@@ -313,27 +313,6 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
     }
 }
 
-fn dump_ir_iter(output: &mut String, tokens: Vec<Token>, indent_level: usize) {
-    let indent = String::from_utf8(vec![b' '; indent_level * 4]).unwrap();
-    for token in tokens {
-        match token {
-            Loop(content) => {
-                output.push_str(&format!("{}Loop(content=[\n", indent));
-                dump_ir_iter(output, content, indent_level + 1);
-                output.push_str(&format!("{}])\n", indent));
-            }
-            If(offset, content) => {
-                output.push_str(&format!("{}If(offset={}, content=[\n", indent, offset));
-                dump_ir_iter(output, content, indent_level + 1);
-                output.push_str(&format!("{}])\n", indent));
-            }
-            _ => output.push_str(&format!("{}{:?}\n", indent, token)),
-        }
-    }
-}
-
 fn dump_ir(tokens: Vec<Token>) -> String {
-    let mut output = String::new();
-    dump_ir_iter(&mut output, tokens, 0);
-    output
+    format!("{:#?}\n", tokens)
 }

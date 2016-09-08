@@ -31,8 +31,20 @@ impl fmt::Debug for Token {
             Scan(offset) => write!(f, "Scan(offset={})", offset),
             LoadOut(offset, add) => write!(f, "LoadOut(offset={}, add={})", offset, add),
             LoadOutSet(value) => write!(f, "LoadOutSet(value={})", value),
-            Loop(ref content) => write!(f, "Loop(content={:?})", content),
-            If(offset, ref content) => write!(f, "If(offset={}, content={:?})", offset, content),
+            Loop(ref content) => {
+                if f.alternate() {
+                    write!(f, "Loop(content={:#?})", content)
+                } else {
+                    write!(f, "Loop(content={:?})", content)
+                }
+            }
+            If(offset, ref content) => {
+                if f.alternate() {
+                    write!(f, "If(offset={}, content={:#?})", offset, content)
+                } else {
+                    write!(f, "If(offset={}, content={:?})", offset, content)
+                }
+            }
         }
     }
 }
