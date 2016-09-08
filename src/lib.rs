@@ -65,7 +65,7 @@ fn _parse(chars: &mut std::str::Chars) -> Vec<Token> {
     tokens
 }
 
-fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
+fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i32, i32>, i32) {
     let mut newtokens: Vec<Token> = Vec::with_capacity(tokens.len());
     let mut shift = 0;
     let mut do_output = false;
@@ -123,7 +123,8 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
             }
             MulCopy(src, dest, mul) => newtokens.push(MulCopy(src + shift, dest + shift, mul)),
             // XXX Deal with shift in if, if those are ever generated
-            If(offset, ref contents) => newtokens.push(If(offset + shift, _optimize(contents))),
+            // TODO Optimize inside of If?
+            If(offset, ref contents) => newtokens.push(If(offset + shift, contents.clone())),
             Move(offset) => shift += offset,
             Output => do_output = true,
             LoadOut(mut offset, add) => {
@@ -134,7 +135,7 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
                     newtokens.push(LoadOut(offset, adds.get(&offset).unwrap_or(&0) + add));
                 }
             }
-            Loop(ref contents) => newtokens.push(Loop(_optimize(contents))),
+            Loop(ref contents) => newtokens.push(_optimize_loop(contents)),
             LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
             Input => newtokens.push(Input),
             Scan(offset) => newtokens.push(Scan(offset + shift)),
@@ -144,6 +145,13 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
     if do_output {
         newtokens.push(Output);
     }
+
+    (newtokens, sets, adds, shift)
+}
+
+fn _optimize_loop(tokens: &Vec<Token>) -> Token {
+    let (mut newtokens, sets, adds, shift) = _optimize(tokens);
+
     for (offset, value) in sets.iter() {
         newtokens.push(Set(*offset, *value));
     }
@@ -154,15 +162,16 @@ fn _optimize(tokens: &Vec<Token>) -> Vec<Token> {
         newtokens.push(Move(shift));
     }
 
-    newtokens
+    Loop(newtokens)
 }
 
 pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     let mut oldtokens = tokens;
-    let mut newtokens = _optimize(&oldtokens);
+    // Ignore sets/adds/shifts at end of file
+    let mut newtokens = _optimize(&oldtokens).0;
     while newtokens != oldtokens {
         oldtokens = newtokens;
-        newtokens = _optimize(&oldtokens);
+        newtokens = _optimize(&oldtokens).0;
     }
     newtokens
 }
