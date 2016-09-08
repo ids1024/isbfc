@@ -152,17 +152,22 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
 fn _optimize_loop(tokens: &Vec<Token>) -> Token {
     let (mut newtokens, sets, adds, shift) = _optimize(tokens);
 
-    for (offset, value) in sets.iter() {
-        newtokens.push(Set(*offset, *value));
+    if shift != 0 && sets.is_empty() && adds.is_empty() && newtokens.is_empty() {
+        Scan(shift)
     }
-    for (offset, value) in adds.iter() {
-        newtokens.push(Add(*offset, *value));
-    }
-    if shift != 0 {
-        newtokens.push(Move(shift));
-    }
+    else {
+        for (offset, value) in sets.iter() {
+            newtokens.push(Set(*offset, *value));
+        }
+        for (offset, value) in adds.iter() {
+            newtokens.push(Add(*offset, *value));
+        }
+        if shift != 0 {
+            newtokens.push(Move(shift));
+        }
 
-    Loop(newtokens)
+        Loop(newtokens)
+    }
 }
 
 pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
