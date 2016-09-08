@@ -122,9 +122,16 @@ fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i
                 }
             }
             MulCopy(src, dest, mul) => newtokens.push(MulCopy(src + shift, dest + shift, mul)),
-            // XXX Deal with shift in if, if those are ever generated
-            // TODO Optimize inside of If?
-            If(offset, ref contents) => newtokens.push(If(offset + shift, contents.clone())),
+            If(offset, ref contents) => {
+                let mut newcontents = Vec::new();
+                for i in contents.iter() {
+                    newcontents.push(match *i {
+                        Set(offset, value) => Set(offset + shift, value),
+                        _ => unreachable!(),
+                    });
+                }
+                newtokens.push(If(offset + shift, newcontents));
+            }
             Move(offset) => shift += offset,
             Output => do_output = true,
             LoadOut(mut offset, add) => {
@@ -160,10 +167,17 @@ fn _optimize_loop(tokens: &Vec<Token>,
 
     if shift != 0 && sets.is_empty() && adds.is_empty() && newtokens.is_empty() {
         outer_tokens.push(Scan(shift));
-    } else if shift == 0 && newtokens.is_empty() && adds.contains_key(&0) && adds.len() == 1 &&
-              sets.is_empty() {
-        // TODO: Implement when !sets.is_empty()
-        outer_sets.insert(0, 0);
+    } else if shift == 0 && newtokens.is_empty() && adds.contains_key(&0) && adds.len() == 1 {
+        if !sets.is_empty() {
+            let mut iftokens = Vec::new();
+            for (offset, value) in sets.iter() {
+                iftokens.push(Set(*offset, *value));
+            }
+            iftokens.push(Set(0, 0));
+            outer_tokens.push(If(0, iftokens));
+        } else {
+            outer_sets.insert(0, 0);
+        }
     } else {
         for (offset, value) in sets.iter() {
             newtokens.push(Set(*offset, *value));
