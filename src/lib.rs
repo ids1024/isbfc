@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 use std::fmt;
+use std::iter::FromIterator;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Token {
     Output,
     Input,
-    Loop,
-    EndLoop,
+    Loop(Vec<Token>),
     Move(i32),
     Add(i32, i32),
     Set(i32, i32),
@@ -14,8 +14,7 @@ pub enum Token {
     Scan(i32),
     LoadOut(i32, i32),
     LoadOutSet(i32),
-    If(i32),
-    EndIf,
+    If(i32, Vec<Token>),
 }
 use Token::*;
 
@@ -24,8 +23,6 @@ impl fmt::Debug for Token {
         match *self {
             Output => write!(f, "Output"),
             Input => write!(f, "Input"),
-            Loop => write!(f, "Loop"),
-            EndLoop => write!(f, "EndLoop"),
             Move(offset) => write!(f, "Move(offset={})", offset),
             Add(offset, value) => write!(f, "Add(offset={}, value={})", offset, value),
             Set(offset, value) => write!(f, "Set(offset={}, value={})", offset, value),
@@ -35,22 +32,28 @@ impl fmt::Debug for Token {
             Scan(offset) => write!(f, "Scan(offset={})", offset),
             LoadOut(offset, add) => write!(f, "LoadOut(offset={}, add={})", offset, add),
             LoadOutSet(value) => write!(f, "LoadOutSet(value={})", value),
-            If(offset) => write!(f, "If(offset={})", offset),
-            EndIf => write!(f, "EndIf\n"),
+            Loop(ref content) => write!(f, "Loop(content={:?})", content),
+            If(offset, ref content) => write!(f, "If(offset={}, content={:?})", offset, content),
         }
     }
 }
 
 pub fn parse(code: &str) -> Vec<Token> {
-    let mut tokens = Vec::with_capacity(code.len());
-    for i in code.chars() {
+    _parse(&mut code.chars())
+}
+
+fn _parse(chars: &mut std::str::Chars) -> Vec<Token> {
+    let mut tokens = Vec::new();
+    while let Some(i) = chars.next() {
         match i {
             '+' => tokens.push(Add(0, 1)),
             '-' => tokens.push(Add(0, -1)),
             '>' => tokens.push(Move(1)),
             '<' => tokens.push(Move(-1)),
-            '[' => tokens.push(Loop),
-            ']' => tokens.push(EndLoop),
+            '[' => tokens.push(Loop(_parse(chars))),
+            ']' => {
+                break;
+            }
             ',' => tokens.push(Input),
             '.' => {
                 tokens.push(LoadOut(0, 0));
@@ -63,7 +66,7 @@ pub fn parse(code: &str) -> Vec<Token> {
     tokens
 }
 
-pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
+fn _optimize(tokens: &Vec<Token>) -> (Vec<Token>, BTreeMap<i32, i32>, BTreeMap<i32, i32>, i32) {
     let mut newtokens: Vec<Token> = Vec::with_capacity(tokens.len());
     let mut shift = 0;
     let mut do_output = false;
@@ -71,70 +74,8 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
     // in recursion, and the optimizer never exits.
     let mut adds: BTreeMap<i32, i32> = BTreeMap::new();
     let mut sets: BTreeMap<i32, i32> = BTreeMap::new();
-    let mut pre_loop_sets: BTreeMap<i32, i32> = BTreeMap::new();
 
     for token in tokens.iter() {
-        if *token == EndLoop && newtokens.last() == Some(&Loop) && shift == 0 &&
-           adds.contains_key(&0) {
-            if adds.len() == 1 {
-                newtokens.pop(); // Remove Loop
-                if !sets.is_empty() {
-                    newtokens.push(If(0));
-                    for (offset, value) in sets.iter() {
-                        newtokens.push(Set(*offset, *value));
-                    }
-                    sets.clear();
-                    newtokens.push(Set(0, 0));
-                    newtokens.push(EndIf);
-                } else {
-                    sets.insert(0, 0);
-                }
-                pre_loop_sets.clear();
-                adds.clear();
-                continue;
-            } else if adds.get(&0) == Some(&-1) {
-                newtokens.pop(); // Remove Loop
-                if !sets.is_empty() {
-                    newtokens.push(If(0));
-                    for (offset, value) in sets.iter() {
-                        newtokens.push(Set(*offset, *value));
-                    }
-                }
-                for (offset, value) in adds.iter() {
-                    if *offset != 0 {
-                        let src = 0;
-                        let dest = *offset;
-                        let mul = *value;
-                        if pre_loop_sets.contains_key(&src) {
-                            let val = pre_loop_sets.get(&src).unwrap() * mul;
-                            newtokens.push(Add(dest, val));
-                        } else {
-                            newtokens.push(MulCopy(src, dest, mul));
-                        }
-                    }
-                }
-                if !sets.is_empty() {
-                    newtokens.push(EndIf);
-                }
-                pre_loop_sets.clear();
-                adds.clear();
-                sets.clear();
-                sets.insert(0, 0);
-                continue;
-            }
-        }
-
-        match *token {
-            Loop => {
-                pre_loop_sets.clear();
-                for (offset, value) in sets.iter() {
-                    pre_loop_sets.insert(*offset + shift, *value);
-                }
-            }
-            Set(..) | Add(..) | Move(_) => {}
-            _ => pre_loop_sets.clear(),
-        }
-
         match *token {
             Set(..) | Add(..) | Move(_) | LoadOut(..) | LoadOutSet(_) | Output => {}
             _ => {
@@ -156,7 +97,7 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
 
         if shift != 0 {
             match *token {
-                Loop | Input | Scan(_) => {
+                Loop(_) | Input | Scan(_) => {
                     newtokens.push(Move(shift));
                     shift = 0;
                 }
@@ -182,8 +123,17 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                 }
             }
             MulCopy(src, dest, mul) => newtokens.push(MulCopy(src + shift, dest + shift, mul)),
-            // XXX Deal with shift in if, if those are ever generated
-            If(offset) => newtokens.push(If(offset + shift)),
+            If(offset, ref contents) => {
+                let mut newcontents = Vec::new();
+                for i in contents.iter() {
+                    newcontents.push(match *i {
+                        Set(offset, value) => Set(offset + shift, value),
+                        MulCopy(src, dest, mul) => MulCopy(src + shift, dest + shift, mul),
+                        _ => unreachable!(),
+                    });
+                }
+                newtokens.push(If(offset + shift, newcontents));
+            }
             Move(offset) => shift += offset,
             Output => do_output = true,
             LoadOut(mut offset, add) => {
@@ -194,32 +144,86 @@ pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
                     newtokens.push(LoadOut(offset, adds.get(&offset).unwrap_or(&0) + add));
                 }
             }
-            EndLoop => {
-                if newtokens.last() == Some(&Loop) && shift != 0 && sets.is_empty() &&
-                   adds.is_empty() {
-                    newtokens.pop(); // Remove StartLoop
-                    newtokens.push(Scan(shift));
-                } else {
-                    if shift != 0 {
-                        newtokens.push(Move(shift));
-                    }
-                    newtokens.push(EndLoop);
-                }
-                shift = 0;
+            Loop(ref contents) => {
+                _optimize_loop(contents, &mut newtokens, &mut sets, &mut adds, &mut shift)
             }
-            EndIf | LoadOutSet(_) | Loop | Input | Scan(_) => newtokens.push(*token),
+            LoadOutSet(value) => newtokens.push(LoadOutSet(value)),
+            Input => newtokens.push(Input),
+            Scan(offset) => newtokens.push(Scan(offset + shift)),
         }
     }
 
-    // Any remaining add/set/shift is ignored, as it would have no effect
     if do_output {
         newtokens.push(Output);
     }
 
-    // Optimize recursively
-    if newtokens != tokens {
-        optimize(newtokens)
+    (newtokens, sets, adds, shift)
+}
+
+fn _optimize_loop(tokens: &Vec<Token>,
+                  outer_tokens: &mut Vec<Token>,
+                  outer_sets: &mut BTreeMap<i32, i32>,
+                  outer_adds: &mut BTreeMap<i32, i32>,
+                  outer_shift: &mut i32) {
+    let (mut newtokens, sets, adds, shift) = _optimize(tokens);
+
+    if shift != 0 && sets.is_empty() && adds.is_empty() && newtokens.is_empty() {
+        outer_tokens.push(Scan(shift));
+    } else if shift == 0 && newtokens.is_empty() && adds.contains_key(&0) && adds.len() == 1 {
+        if !sets.is_empty() {
+            let mut iftokens = Vec::new();
+            for (offset, value) in sets.iter() {
+                iftokens.push(Set(*offset, *value));
+            }
+            iftokens.push(Set(0, 0));
+            outer_tokens.push(If(0, iftokens));
+        } else {
+            outer_sets.insert(0, 0);
+        }
+    } else if shift == 0 && newtokens.is_empty() && adds.get(&0) == Some(&-1) {
+        let contents = adds.iter().filter_map(|(offset, value)| {
+            if *offset != 0 {
+                let src = 0;
+                let dest = *offset;
+                let mul = *value;
+                Some(MulCopy(src, dest, mul))
+            } else {
+                None
+            }
+        });
+
+        if !sets.is_empty() {
+            let iftokens = Vec::from_iter(sets.iter()
+                .map(|(offset, value)| Set(*offset, *value))
+                .chain(contents));
+            outer_tokens.push(If(0, iftokens));
+        } else {
+            outer_tokens.extend(contents);
+        }
+
+        outer_sets.insert(0, 0);
     } else {
-        newtokens
+        for (offset, value) in sets.iter() {
+            newtokens.push(Set(*offset, *value));
+        }
+        for (offset, value) in adds.iter() {
+            newtokens.push(Add(*offset, *value));
+        }
+        if shift != 0 {
+            newtokens.push(Move(shift));
+        }
+
+        outer_tokens.push(Loop(newtokens));
     }
+}
+
+pub fn optimize(tokens: Vec<Token>) -> Vec<Token> {
+    let mut oldtokens = tokens;
+    // Ignore sets/adds/shifts at end of file
+    let mut newtokens = _optimize(&oldtokens).0;
+    while newtokens != oldtokens {
+        oldtokens = newtokens;
+        newtokens = _optimize(&oldtokens).0;
+    }
+    newtokens
 }
