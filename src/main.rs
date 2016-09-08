@@ -66,12 +66,11 @@ fn main() {
     let tokens = optimize(tokens);
 
     if matches.is_present("dump_ir") {
-        let output = format!("{:#?}\n", tokens);
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
-            irfile.write_all(&output.into_bytes()).unwrap();
+            write!(irfile, "{:#?}\n", tokens).unwrap();
         } else {
-            print!("{}", output);
+            print!("{:#?}\n", tokens);
         }
     } else if matches.is_present("output_asm") {
         let output = compile(tokens, tape_size);
