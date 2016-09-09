@@ -11,8 +11,8 @@ use std::fs::File;
 extern crate isbfc;
 use isbfc::token::Token;
 use isbfc::token::Token::*;
-use isbfc::parse;
-use isbfc::optimize;
+use isbfc::parser::parse;
+use isbfc::optimizer::optimize;
 
 const BUFSIZE: usize = 8192;
 

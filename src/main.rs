@@ -8,8 +8,8 @@ use clap::{Arg, ArgGroup, App};
 extern crate isbfc;
 use isbfc::token::Token;
 use isbfc::token::Token::*;
-use isbfc::parse;
-use isbfc::optimize;
+use isbfc::parser::parse;
+use isbfc::optimizer::optimize;
 
 struct CompileState {
     output: String,
