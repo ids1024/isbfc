@@ -168,7 +168,10 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
                 if let Some(value) = state.sets.remove(&src) {
                     state.set(dest, value * mul);
                 } else {
-                    state.apply_adds_sets();
+                    if state.sets.contains_key(&dest) || state.adds.contains_key(&src) ||
+                       state.adds.contains_key(&dest) {
+                        state.apply_adds_sets();
+                    }
                     state.tokens.push(MulCopy(src, dest, mul));
                 }
             }
