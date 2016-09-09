@@ -79,6 +79,26 @@ impl OptimizeState {
         self.sets.clear();
         self.adds.clear();
     }
+
+    fn add(&mut self, offset: i32, mut value: i32) {
+        if self.sets.contains_key(&offset) {
+            value = self.sets.get(&offset).unwrap() + value;
+            self.sets.insert(offset, value);
+        } else {
+            value = self.adds.get(&offset).unwrap_or(&0) + value;
+            if value != 0 {
+                self.adds.insert(offset, value);
+            } else {
+                self.adds.remove(&offset);
+            }
+        }
+    }
+
+    fn set(&mut self, offset: i32, value: i32) {
+        // Add before Set does nothing; remove it
+        self.adds.remove(&offset);
+        self.sets.insert(offset, value);
+    }
 }
 
 pub fn parse(code: &str) -> Vec<Token> {
@@ -134,27 +154,19 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
         }
 
         match *token {
-            Set(mut offset, val) => {
+            Set(mut offset, value) => {
                 offset += state.shift;
-                // Add before Set does nothing; remove it
-                state.adds.remove(&offset);
-                state.sets.insert(offset, val);
+                state.set(offset, value);
             }
-            Add(mut offset, mut val) => {
+            Add(mut offset, value) => {
                 offset += state.shift;
-                if state.sets.contains_key(&offset) {
-                    val = state.sets.get(&offset).unwrap() + val;
-                    state.sets.insert(offset, val);
-                } else {
-                    val = state.adds.get(&offset).unwrap_or(&0) + val;
-                    state.adds.insert(offset, val);
-                }
+                state.add(offset, value);
             }
             MulCopy(mut src, mut dest, mul) => {
                 src += state.shift;
                 dest += state.shift;
                 if let Some(value) = state.sets.remove(&src) {
-                    state.sets.insert(dest, value * mul);
+                    state.set(dest, value * mul);
                 } else {
                     state.apply_adds_sets();
                     state.tokens.push(MulCopy(src, dest, mul));
@@ -213,7 +225,7 @@ fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
             iftokens.push(Set(0, 0));
             outer.tokens.push(If(0, iftokens));
         } else {
-            outer.sets.insert(0, 0);
+            outer.set(0, 0);
         }
     } else if inner.shift == 0 && inner.tokens.is_empty() && inner.adds.get(&0) == Some(&-1) {
         let contents = inner.adds.iter().filter_map(|(offset, value)| {
@@ -237,7 +249,7 @@ fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
             outer.tokens.extend(contents);
         }
 
-        outer.sets.insert(0, 0);
+        outer.set(0, 0);
     } else {
         inner.apply_adds_sets();
         inner.apply_shift();
