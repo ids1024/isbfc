@@ -1,60 +1,11 @@
-use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 pub mod token;
+mod optimize_state;
 
 use token::Token;
 use token::Token::*;
-
-#[derive(Default)]
-struct OptimizeState {
-    tokens: Vec<Token>,
-    // With HashMap, the order sometimes switches
-    // in recursion, and the optimizer never exits.
-    adds: BTreeMap<i32, i32>,
-    sets: BTreeMap<i32, i32>,
-    shift: i32,
-}
-
-impl OptimizeState {
-    fn apply_shift(&mut self) {
-        if self.shift != 0 {
-            self.tokens.push(Move(self.shift));
-            self.shift = 0;
-        }
-    }
-
-    fn apply_adds_sets(&mut self) {
-        for (offset, value) in &self.sets {
-            self.tokens.push(Set(*offset, *value));
-        }
-        for (offset, value) in &self.adds {
-            self.tokens.push(Add(*offset, *value));
-        }
-        self.sets.clear();
-        self.adds.clear();
-    }
-
-    fn add(&mut self, offset: i32, mut value: i32) {
-        if self.sets.contains_key(&offset) {
-            value = self.sets.get(&offset).unwrap() + value;
-            self.sets.insert(offset, value);
-        } else {
-            value = self.adds.get(&offset).unwrap_or(&0) + value;
-            if value != 0 {
-                self.adds.insert(offset, value);
-            } else {
-                self.adds.remove(&offset);
-            }
-        }
-    }
-
-    fn set(&mut self, offset: i32, value: i32) {
-        // Add before Set does nothing; remove it
-        self.adds.remove(&offset);
-        self.sets.insert(offset, value);
-    }
-}
+use optimize_state::OptimizeState;
 
 pub fn parse(code: &str) -> Vec<Token> {
     _parse(&mut code.chars())
