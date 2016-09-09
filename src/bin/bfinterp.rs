@@ -9,8 +9,8 @@ use std::io::prelude::*;
 use std::fs::File;
 
 extern crate isbfc;
-use isbfc::Token;
-use isbfc::Token::*;
+use isbfc::token::Token;
+use isbfc::token::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
 

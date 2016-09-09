@@ -6,8 +6,8 @@ extern crate clap;
 use clap::{Arg, ArgGroup, App};
 
 extern crate isbfc;
-use isbfc::Token;
-use isbfc::Token::*;
+use isbfc::token::Token;
+use isbfc::token::Token::*;
 use isbfc::parse;
 use isbfc::optimize;
 
