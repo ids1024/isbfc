@@ -165,8 +165,8 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
             MulCopy(mut src, mut dest, mul) => {
                 src += state.shift;
                 dest += state.shift;
-                if let Some(value) = state.sets.remove(&src) {
-                    state.set(dest, value * mul);
+                if let Some(value) = state.sets.get(&src).cloned() {
+                    state.add(dest, value * mul);
                 } else {
                     if state.sets.contains_key(&dest) || state.adds.contains_key(&src) ||
                        state.adds.contains_key(&dest) {
