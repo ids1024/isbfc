@@ -3,5 +3,9 @@ name = "isbfc"
 version = "0.0.1"
 authors = ["Ian D. Scott <ian@iandouglasscott.com>"]
 
+[[bin]]
+doc = false
+name = "isbfc"
+
 [dependencies]
 clap = "2.3"
