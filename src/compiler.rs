@@ -1,6 +1,7 @@
 use token::Token;
 use token::Token::*;
 
+#[derive(Default)]
 struct CompileState {
     output: String,
     loopnum: i32,
@@ -175,12 +176,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
 }
 
 pub fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
-    let mut state = CompileState {
-        output: String::new(),
-        loopnum: 0,
-        ifnum: 0,
-        outbuffsize: 0,
-    };
+    let mut state = CompileState::default();
 
     compile_iter(&mut state, tokens);
 
