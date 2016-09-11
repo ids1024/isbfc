@@ -122,7 +122,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                                                        "    jnz loop{num}\n",
                                                        "    movq (%rbx), %r12\n"),
                                                num = state.loopnum,
-                                               add_sub = if offset > 0 {"addq"} else {"subq"},
+                                               add_sub = if offset > 0 { "addq" } else { "subq" },
                                                shift = offset.abs() * 8));
             }
             Input => {
