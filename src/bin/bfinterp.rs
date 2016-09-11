@@ -9,10 +9,10 @@ use std::io::prelude::*;
 use std::fs::File;
 
 extern crate isbfc;
-use isbfc::token::Token;
-use isbfc::token::Token::*;
-use isbfc::parser::parse;
-use isbfc::optimizer::optimize;
+use isbfc::Token;
+use isbfc::Token::*;
+use isbfc::parse;
+use isbfc::optimize;
 
 const BUFSIZE: usize = 8192;
 

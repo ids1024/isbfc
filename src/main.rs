@@ -6,9 +6,9 @@ extern crate clap;
 use clap::{Arg, ArgGroup, App};
 
 extern crate isbfc;
-use isbfc::parser::parse;
-use isbfc::compiler::compile;
-use isbfc::optimizer::optimize;
+use isbfc::parse;
+use isbfc::optimize;
+use isbfc::compile;
 
 fn main() {
     let matches = App::new("isbfc")
