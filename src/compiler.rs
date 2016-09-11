@@ -9,17 +9,20 @@ struct CompileState {
     outbuffsize: i32,
 }
 
+fn offset_to_operand(offset: i32) -> String {
+    if offset == 0 {
+        "%r12".to_string()
+    } else {
+        format!("{}(%rbx)", (offset * 8))
+    }
+}
 
 fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
     let mut outbuffpos = 0;
     for token in tokens {
         match token {
             Add(offset, value) => {
-                let dest = if offset == 0 {
-                    "%r12".to_string()
-                } else {
-                    format!("{}(%rbx)", (offset * 8))
-                };
+                let dest = offset_to_operand(offset);
                 if value == 1 && dest == "%r12" {
                     state.output.push_str("    inc %r12\n");
                 } else if value >= 1 {
@@ -31,16 +34,8 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 }
             }
             MulCopy(src_idx, dest_idx, mul) => {
-                let mut src = if src_idx == 0 {
-                    "%r12".to_string()
-                } else {
-                    format!("{}(%rbx)", (src_idx * 8))
-                };
-                let dest = if dest_idx == 0 {
-                    "%r12".to_string()
-                } else {
-                    format!("{}(%rbx)", (dest_idx * 8))
-                };
+                let mut src = offset_to_operand(src_idx);
+                let dest = offset_to_operand(dest_idx);
 
                 if mul != -1 && mul != 1 {
                     state.output.push_str(&format!(concat!("    movq {}, %rax\n",
