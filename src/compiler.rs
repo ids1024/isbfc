@@ -114,21 +114,16 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 // Slighly more optimal than normal loop and move
                 state.loopnum += 1;
                 state.output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
-                                                       "    jmp endloop{}\n",
-                                                       "    loop{}:\n"),
-                                               state.loopnum,
-                                               state.loopnum));
-                if offset > 0 {
-                    state.output.push_str(&format!("    addq ${}, %rbx\n", offset * 8));
-                } else {
-                    state.output.push_str(&format!("    subq ${}, %rbx\n", -offset * 8));
-                }
-                state.output.push_str(&format!(concat!("    endloop{}:\n",
+                                                       "    jmp endloop{num}\n",
+                                                       "    loop{num}:\n",
+                                                       "    {add_sub} ${shift}, %rbx\n",
+                                                       "    endloop{num}:\n",
                                                        "    cmp $0, (%rbx)\n",
-                                                       "    jnz loop{}\n",
+                                                       "    jnz loop{num}\n",
                                                        "    movq (%rbx), %r12\n"),
-                                               state.loopnum,
-                                               state.loopnum));
+                                               num = state.loopnum,
+                                               add_sub = if offset > 0 {"addq"} else {"subq"},
+                                               shift = offset.abs() * 8));
             }
             Input => {
                 state.output.push_str(concat!("\n    xor %rax, %rax\n",
