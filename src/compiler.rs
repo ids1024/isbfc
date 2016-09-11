@@ -67,13 +67,11 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
             }
             Move(offset) => {
                 if offset != 0 {
-                    state.output.push_str("    movq %r12, (%rbx)\n");
-                    if offset > 0 {
-                        state.output.push_str(&format!("    addq ${}, %rbx\n", offset * 8));
-                    } else {
-                        state.output.push_str(&format!("    subq ${}, %rbx\n", -offset * 8));
-                    }
-                    state.output.push_str("    movq (%rbx), %r12\n");
+                    state.output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
+                                                           "    {add_sub} ${shift}, %rbx\n",
+                                                           "    movq (%rbx), %r12\n"),
+                                                   add_sub = if offset > 0 { "addq" } else { "subq" },
+                                                   shift = offset.abs() * 8));
                 }
             }
             Loop(content) => {
