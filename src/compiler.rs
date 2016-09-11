@@ -61,10 +61,8 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
             Set(offset, value) => {
                 if offset == 0 && value == 0 {
                     state.output.push_str("    xor %r12, %r12\n");
-                } else if offset == 0 {
-                    state.output.push_str(&format!("    movq ${}, %r12\n", value));
                 } else {
-                    state.output.push_str(&format!("    movq ${}, {}(%rbx)\n", value, offset * 8));
+                    state.output.push_str(&format!("    movq ${}, {}\n", value, offset_to_operand(offset)));
                 }
             }
             Move(offset) => {
