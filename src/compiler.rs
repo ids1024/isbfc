@@ -9,6 +9,8 @@ struct CompileState {
     outbuffsize: i32,
 }
 
+/// Takes an offset from the current cell, and returns a string in assembly code
+/// representing the register or memory region it is stored in
 fn offset_to_operand(offset: i32) -> String {
     if offset == 0 {
         "%r12".to_string()
