@@ -7,5 +7,9 @@ authors = ["Ian D. Scott <ian@iandouglasscott.com>"]
 doc = false
 name = "isbfc"
 
+[[bin]]
+name = "bfinterp"
+path = "src/bin/bfinterp.rs"
+
 [dependencies]
 clap = "2.3"
