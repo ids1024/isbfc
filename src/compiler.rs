@@ -184,11 +184,6 @@ pub fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
 
     compile_iter(&mut state, tokens);
 
-    // Exit syscall
-    state.output.push_str(concat!("\n    movq $60, %rax\n",
-                                  "    movq $0, %rdi\n",
-                                  "    syscall\n"));
-
     format!(concat!(".section .bss\n",
                     "    .lcomm strbuff, {outbuffsize}\n",
                     "    .lcomm mem, {}\n",
@@ -197,7 +192,12 @@ pub fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
                     ".global _start\n",
                     "_start:\n",
                     "    xor %r12, %r12\n",
-                    "    movq $startidx, %rbx\n\n{}"),
+                    "    movq $startidx, %rbx\n\n",
+                    "{}\n",
+                    // Exit syscall
+                    "    movq $60, %rax\n",
+                    "    movq $0, %rdi\n",
+                    "    syscall\n"),
             tape_size,
             tape_size / 2,
             state.output,
