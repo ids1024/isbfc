@@ -62,7 +62,8 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 if offset == 0 && value == 0 {
                     state.output.push_str("    xor %r12, %r12\n");
                 } else {
-                    state.output.push_str(&format!("    movq ${}, {}\n", value, offset_to_operand(offset)));
+                    state.output
+                        .push_str(&format!("    movq ${}, {}\n", value, offset_to_operand(offset)));
                 }
             }
             Move(offset) => {
@@ -70,7 +71,8 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                     state.output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
                                                            "    {add_sub} ${shift}, %rbx\n",
                                                            "    movq (%rbx), %r12\n"),
-                                                   add_sub = if offset > 0 { "addq" } else { "subq" },
+                                                   add_sub =
+                                                       if offset > 0 { "addq" } else { "subq" },
                                                    shift = offset.abs() * 8));
                 }
             }
