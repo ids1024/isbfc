@@ -1,5 +1,7 @@
 use std::iter::FromIterator;
-use optimize_state::OptimizeState;
+
+mod optimize_state;
+use self::optimize_state::OptimizeState;
 
 use token::Token;
 use token::Token::*;
