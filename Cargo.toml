@@ -2,6 +2,9 @@
 name = "isbfc"
 version = "0.0.1"
 authors = ["Ian D. Scott <ian@iandouglasscott.com>"]
+description = "Brainfuck compiler for x86_64"
+repository = "https://github.com/ids1024/isbfc"
+license = "MIT"
 
 [[bin]]
 doc = false
