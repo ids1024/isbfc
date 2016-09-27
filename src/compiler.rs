@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use token::Token;
 use token::Token::*;
 
@@ -19,20 +21,34 @@ fn offset_to_operand(offset: i32) -> String {
     }
 }
 
-fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
+fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
+    let indent = String::from_utf8(vec![b' '; level * 4]).unwrap();
+    macro_rules! push_asm {
+        ($fmt:expr) => {
+            (write!(&mut state.output, concat!("{}", $fmt, "\n"),
+                   &indent)).unwrap()
+        };
+        ($fmt:expr, $($arg:tt)*) => {
+            (write!(&mut state.output, concat!("{}", $fmt, "\n"),
+                   &indent,
+                   $($arg)*)).unwrap()
+        };
+    }
+
+
     let mut outbuffpos = 0;
     for token in tokens {
         match token {
             Add(offset, value) => {
                 let dest = offset_to_operand(offset);
                 if value == 1 && dest == "%r12" {
-                    state.output.push_str("    inc %r12\n");
+                    push_asm!("inc %r12");
                 } else if value >= 1 {
-                    state.output.push_str(&format!("    addq ${}, {}\n", value, dest));
+                    push_asm!("addq ${}, {}", value, dest);
                 } else if value == -1 && dest == "%r12" {
-                    state.output.push_str("    dec %r12\n");
+                    push_asm!("dec %r12");
                 } else if value <= -1 {
-                    state.output.push_str(&format!("    subq ${}, {}\n", -value, dest));
+                    push_asm!("subq ${}, {}", -value, dest);
                 }
             }
             MulCopy(src_idx, dest_idx, mul) => {
@@ -40,121 +56,113 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
                 let dest = offset_to_operand(dest_idx);
 
                 if mul != -1 && mul != 1 {
-                    state.output.push_str(&format!(concat!("    movq {}, %rax\n",
-                                                           "    movq ${}, %rdx\n",
-                                                           "    mulq %rdx\n"),
-                                                   src,
-                                                   mul.abs()));
+                    push_asm!("movq {}, %rax", src);
+                    push_asm!("movq ${}, %rdx", mul.abs());
+                    push_asm!("mulq %rdx");
                     src = "%rax".to_string();
                 } else if src != "%r12" && dest != "%r12" {
                     // x86 cannot move memory to memory
-                    state.output.push_str(&format!("    movq {}, %rax\n", src));
+                    push_asm!("movq {}, %rax", src);
                     src = "%rax".to_string();
                 }
 
                 if mul > 0 {
-                    state.output.push_str(&format!("    addq {}, {}\n", src, dest));
+                    push_asm!("addq {}, {}", src, dest);
                 } else {
-                    state.output.push_str(&format!("    subq {}, {}\n", src, dest));
+                    push_asm!("subq {}, {}", src, dest);
                 }
             }
             Set(offset, value) => {
                 if offset == 0 && value == 0 {
-                    state.output.push_str("    xor %r12, %r12\n");
+                    push_asm!("xor %r12, %r12");
                 } else {
-                    state.output
-                        .push_str(&format!("    movq ${}, {}\n", value, offset_to_operand(offset)));
+                    push_asm!("movq ${}, {}", value, offset_to_operand(offset));
                 }
             }
             Move(offset) => {
                 if offset != 0 {
-                    state.output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
-                                                           "    {add_sub} ${shift}, %rbx\n",
-                                                           "    movq (%rbx), %r12\n"),
-                                                   add_sub =
-                                                       if offset > 0 { "addq" } else { "subq" },
-                                                   shift = offset.abs() * 8));
+                    push_asm!("movq %r12, (%rbx)");
+                    push_asm!("{add_sub} ${shift}, %rbx",
+                              add_sub = if offset > 0 { "addq" } else { "subq" },
+                              shift = offset.abs() * 8);
+                    push_asm!("movq (%rbx), %r12");
                 }
             }
             Loop(content) => {
                 state.loopnum += 1;
                 let curloop = state.loopnum;
-                state.output.push_str(&format!(concat!("    jmp endloop{}\n", "    loop{}:\n"),
-                                               curloop,
-                                               curloop));
+                push_asm!("jmp endloop{}", curloop);
+                push_asm!("loop{}:", curloop);
 
-                compile_iter(state, content);
+                compile_iter(state, content, level + 1);
 
-                state.output.push_str(&format!(concat!("    endloop{}:\n",
-                                                       "    test %r12, %r12\n",
-                                                       "    jnz loop{}\n"),
-                                               curloop,
-                                               curloop))
+                push_asm!("endloop{}:", curloop);
+                push_asm!("test %r12, %r12");
+                push_asm!("jnz loop{}", curloop);
             }
             If(offset, content) => {
                 state.ifnum += 1;
                 let curif = state.ifnum;
                 if offset == 0 {
-                    state.output.push_str("    test %r12, %r12\n");
+                    push_asm!("test %r12, %r12");
                 } else {
-                    state.output.push_str(&format!("    cmpq $0, {}(%rbx)\n", offset * 8));
+                    push_asm!("cmpq $0, {}(%rbx)", offset * 8);
                 }
-                state.output.push_str(&format!("    jz endif{}\n", curif));
+                push_asm!("jz endif{}", curif);
 
-                compile_iter(state, content);
+                compile_iter(state, content, level + 1);
 
-                state.output.push_str(&format!("    endif{}:\n", curif))
+                push_asm!("endif{}:\n", curif);
             }
             Scan(offset) => {
                 // Slighly more optimal than normal loop and move
                 state.loopnum += 1;
-                state.output.push_str(&format!(concat!("    movq %r12, (%rbx)\n",
-                                                       "    jmp endloop{num}\n",
-                                                       "    loop{num}:\n",
-                                                       "    {add_sub} ${shift}, %rbx\n",
-                                                       "    endloop{num}:\n",
-                                                       "    cmp $0, (%rbx)\n",
-                                                       "    jnz loop{num}\n",
-                                                       "    movq (%rbx), %r12\n"),
-                                               num = state.loopnum,
-                                               add_sub = if offset > 0 { "addq" } else { "subq" },
-                                               shift = offset.abs() * 8));
+                push_asm!("movq %r12, (%rbx)");
+                push_asm!("jmp endloop{}", state.loopnum);
+                push_asm!("loop{}:", state.loopnum);
+                push_asm!("{add_sub} ${shift}, %rbx",
+                          add_sub = if offset > 0 { "addq" } else { "subq" },
+                          shift = offset.abs() * 8);
+                push_asm!("endloop{}:", state.loopnum);
+                push_asm!("cmp $0, (%rbx)");
+                push_asm!("jnz loop{}", state.loopnum);
+                push_asm!("movq (%rbx), %r12");
             }
             Input => {
-                state.output.push_str(concat!("\n    xor %rax, %rax\n",
-                                              "    xor %rdi, %rdi\n",
-                                              "    movq %rbx, %rsi\n",
-                                              "    movq $1, %rdx\n",
-                                              "    syscall\n",
-                                              "    movq (%rbx), %r12\n\n"))
+                push_asm!("");
+                push_asm!("xor %rax, %rax");
+                push_asm!("xor %rdi, %rdi");
+                push_asm!("movq %rbx, %rsi");
+                push_asm!("movq $1, %rdx");
+                push_asm!("syscall");
+                push_asm!("movq (%rbx), %r12\n");
             }
             LoadOut(offset, add) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
                 if offset == 0 {
-                    state.output.push_str(&format!("    movq %r12, {}\n", outaddr));
+                    push_asm!("movq %r12, {}", outaddr);
                 } else {
-                    state.output.push_str(&format!("    movq {}(%rbx), %rax\n", offset * 8));
-                    state.output.push_str(&format!("    movq %rax, {}\n", outaddr));
+                    push_asm!("movq {}(%rbx), %rax", offset * 8);
+                    push_asm!("movq %rax, {}", outaddr);
                 }
                 if add > 0 {
-                    state.output.push_str(&format!("    addb ${}, {}\n", add, outaddr));
+                    push_asm!("addb ${}, {}", add, outaddr);
                 } else if add < 0 {
-                    state.output.push_str(&format!("    subb ${}, {}\n", -add, outaddr));
+                    push_asm!("subb ${}, {}", -add, outaddr);
                 }
                 outbuffpos += 1;
             }
             LoadOutSet(value) => {
                 let outaddr = format!("(strbuff+{})", outbuffpos);
-                state.output.push_str(&format!("    movq ${}, {}\n", value, outaddr));
+                push_asm!("movq ${}, {}", value, outaddr);
                 outbuffpos += 1;
             }
             Output => {
-                state.output.push_str(&format!(concat!("    movq $1, %rax\n",
-                                                       "    movq $1, %rdi\n",
-                                                       "    movq $strbuff, %rsi\n",
-                                                       "    movq ${}, %rdx\n",
-                                                       "    syscall\n\n"),
-                                               outbuffpos));
+                push_asm!("movq $1, %rax");
+                push_asm!("movq $1, %rdi");
+                push_asm!("movq $strbuff, %rsi");
+                push_asm!("movq ${}, %rdx", outbuffpos);
+                push_asm!("syscall\n");
 
                 if state.outbuffsize < outbuffpos + 8 {
                     state.outbuffsize = outbuffpos + 8;
@@ -168,7 +176,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>) {
 pub fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
     let mut state = CompileState::default();
 
-    compile_iter(&mut state, tokens);
+    compile_iter(&mut state, tokens, 1);
 
     format!(concat!(".section .bss\n",
                     "    .lcomm strbuff, {outbuffsize}\n",
