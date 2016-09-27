@@ -23,6 +23,8 @@ fn offset_to_operand(offset: i32) -> String {
 
 fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
     let indent = String::from_utf8(vec![b' '; level * 4]).unwrap();
+    /// Add line of assembly to output, with indentation and newline, using
+    /// format! syntax.
     macro_rules! push_asm {
         ($fmt:expr) => {
             (write!(&mut state.output, concat!("{}", $fmt, "\n"),
