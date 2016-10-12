@@ -69,11 +69,11 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
             Output => do_output = true,
             LoadOut(mut offset, add) => {
                 offset += state.shift;
-                if state.sets.contains_key(&offset) {
-                    state.tokens.push(LoadOutSet(state.sets.get(&offset).unwrap() + add));
+                state.tokens.push(if state.sets.contains_key(&offset) {
+                    LoadOutSet(state.sets.get(&offset).unwrap() + add)
                 } else {
-                    state.tokens.push(LoadOut(offset, state.adds.get(&offset).unwrap_or(&0) + add));
-                }
+                    LoadOut(offset, state.adds.get(&offset).unwrap_or(&0) + add)
+                });
             }
             Loop(ref contents) => _optimize_loop(contents, &mut state),
             LoadOutSet(value) => state.tokens.push(LoadOutSet(value)),
