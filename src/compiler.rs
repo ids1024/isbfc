@@ -175,6 +175,9 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
     }
 }
 
+
+/// Takes intermediate representation output by `parse()` or `optimize()` and
+/// returns a string of x86_64 Linux assembly
 pub fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
     let mut state = CompileState::default();
 

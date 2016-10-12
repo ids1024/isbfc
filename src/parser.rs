@@ -2,6 +2,8 @@ use std::str::Chars;
 use token::Token;
 use token::Token::*;
 
+/// Parses a string of brainfuck code to isbfc's intermediate representation,
+/// without applying any optimization
 pub fn parse(code: &str) -> Vec<Token> {
     _parse(&mut code.chars())
 }
