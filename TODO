@@ -10,6 +10,6 @@
 - Document code better
 - Brainfuck debugging symbols
   - Debugging in interpreter by printing tokens?
-- Add indentation to asm output
+✓ Add indentation to asm output
 - Support other backends (arm, llvm, etc)
 - Directly generate machine code, eliminating assembler and linker?
