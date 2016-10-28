@@ -2,6 +2,7 @@ use std::fmt::Write;
 
 use token::Token;
 use token::Token::*;
+use ir::IsbfcIR;
 
 #[derive(Default)]
 struct CompileState {
@@ -176,29 +177,32 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
 }
 
 
-/// Takes intermediate representation output by `parse()` or `optimize()` and
-/// returns a string of x86_64 Linux assembly
-pub fn compile(tokens: Vec<Token>, tape_size: i32) -> String {
-    let mut state = CompileState::default();
+impl IsbfcIR {
+    /// Takes intermediate representation output by `parse()` or `optimize()` and
+    /// returns a string of x86_64 Linux assembly
+    pub fn compile(&self, tape_size: i32) -> String {
+        let mut state = CompileState::default();
 
-    compile_iter(&mut state, tokens, 1);
+        // XXX implement without clone
+        compile_iter(&mut state, self.tokens.clone(), 1);
 
-    format!(concat!(".section .bss\n",
-                    "    .lcomm strbuff, {outbuffsize}\n",
-                    "    .lcomm mem, {}\n",
-                    "    .set startidx, mem + {}\n",
-                    ".section .text\n",
-                    ".global _start\n",
-                    "_start:\n",
-                    "    xor %r12, %r12\n",
-                    "    movq $startidx, %rbx\n\n",
-                    "{}\n",
-                    // Exit syscall
-                    "    movq $60, %rax\n",
-                    "    movq $0, %rdi\n",
-                    "    syscall\n"),
-            tape_size,
-            tape_size / 2,
-            state.output,
-            outbuffsize = state.outbuffsize)
+        format!(concat!(".section .bss\n",
+                        "    .lcomm strbuff, {outbuffsize}\n",
+                        "    .lcomm mem, {}\n",
+                        "    .set startidx, mem + {}\n",
+                        ".section .text\n",
+                        ".global _start\n",
+                        "_start:\n",
+                        "    xor %r12, %r12\n",
+                        "    movq $startidx, %rbx\n\n",
+                        "{}\n",
+                        // Exit syscall
+                        "    movq $60, %rax\n",
+                        "    movq $0, %rdi\n",
+                        "    syscall\n"),
+                tape_size,
+                tape_size / 2,
+                state.output,
+                outbuffsize = state.outbuffsize)
+    }
 }

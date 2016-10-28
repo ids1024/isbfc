@@ -1,11 +1,13 @@
 use std::str::Chars;
 use token::Token;
 use token::Token::*;
+use ir::IsbfcIR;
 
 /// Parses a string of brainfuck code to isbfc's intermediate representation,
 /// without applying any optimization
-pub fn parse(code: &str) -> Vec<Token> {
-    _parse(&mut code.chars())
+pub fn parse(code: &str) -> IsbfcIR {
+    let tokens = _parse(&mut code.chars());
+    IsbfcIR{tokens: tokens}
 }
 
 fn _parse(chars: &mut Chars) -> Vec<Token> {

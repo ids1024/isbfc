@@ -7,8 +7,6 @@ use clap::{Arg, ArgGroup, App};
 
 extern crate isbfc;
 use isbfc::parse;
-use isbfc::optimize;
-use isbfc::compile;
 
 fn main() {
     let matches = App::new("isbfc")
@@ -54,26 +52,25 @@ fn main() {
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
-    let tokens = parse(&code);
-    let tokens = optimize(tokens);
+    let ir = parse(&code).optimize();
 
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
-            write!(irfile, "{:#?}\n", tokens).unwrap();
+            write!(irfile, "{:#?}\n", ir).unwrap();
         } else {
-            print!("{:#?}\n", tokens);
+            print!("{:#?}\n", ir);
         }
     } else if matches.is_present("output_asm") {
         println!("Compiling...");
-        let output = compile(tokens, tape_size);
+        let output = ir.compile(tape_size);
         let def_name = format!("{}.s", name);
         let out_name = matches.value_of("out_name").unwrap_or(&def_name);
         let mut asmfile = File::create(out_name).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
         println!("Compiling...");
-        let output = compile(tokens, tape_size);
+        let output = ir.compile(tape_size);
         let out_name = matches.value_of("out_name").unwrap_or(name);
         let debug = matches.is_present("debugging_symbols");
         asm_and_link(&output, &name, &out_name, debug);
