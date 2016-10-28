@@ -6,7 +6,6 @@ extern crate clap;
 use clap::{Arg, ArgGroup, App};
 
 extern crate isbfc;
-use isbfc::parse;
 
 fn main() {
     let matches = App::new("isbfc")
@@ -52,7 +51,7 @@ fn main() {
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
-    let ir = parse(&code).optimize();
+    let ir = isbfc::parse(&code).optimize();
 
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {

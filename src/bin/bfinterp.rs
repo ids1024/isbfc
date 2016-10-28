@@ -11,7 +11,6 @@ use std::fs::File;
 extern crate isbfc;
 use isbfc::Token;
 use isbfc::Token::*;
-use isbfc::parse;
 
 const BUFSIZE: usize = 8192;
 
@@ -66,7 +65,7 @@ fn main() {
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
-    let tokens = parse(code.as_str()).optimize().tokens;
+    let tokens = isbfc::parse(code.as_str()).optimize().tokens;
 
     let mut mem: [i32; BUFSIZE] = [0; BUFSIZE];
     let mut cur = BUFSIZE / 2;
