@@ -9,7 +9,9 @@ pub use token::Token;
 pub use parser::parse;
 
 
+/// Intermediate representation used by isbfc
 pub struct IsbfcIR {
+    /// Syntax tree of tokens
     pub tokens: Vec<Token>
 }
 

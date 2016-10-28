@@ -178,8 +178,8 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
 
 
 impl IsbfcIR {
-    /// Takes intermediate representation output by `parse()` or `optimize()` and
-    /// returns a string of x86_64 Linux assembly
+    /// Compiles the intermediate representation to x86_64 Linux assembly
+    /// returning a String
     pub fn compile(&self, tape_size: i32) -> String {
         let mut state = CompileState::default();
 
