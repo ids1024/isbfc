@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use token::Token;
 use token::Token::*;
-use ir::IsbfcIR;
+use IsbfcIR;
 
 #[derive(Default)]
 struct CompileState {

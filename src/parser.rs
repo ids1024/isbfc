@@ -1,7 +1,7 @@
 use std::str::Chars;
 use token::Token;
 use token::Token::*;
-use ir::IsbfcIR;
+use IsbfcIR;
 
 /// Parses a string of brainfuck code to isbfc's intermediate representation,
 /// without applying any optimization

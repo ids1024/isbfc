@@ -5,7 +5,7 @@ use self::optimize_state::OptimizeState;
 
 use token::Token;
 use token::Token::*;
-use ir::IsbfcIR;
+use IsbfcIR;
 
 fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
     let mut do_output = false;
