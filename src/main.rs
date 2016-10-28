@@ -56,9 +56,9 @@ fn main() {
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
-            write!(irfile, "{:#?}\n", ir).unwrap();
+            writeln!(irfile, "{:#?}", ir).unwrap();
         } else {
-            print!("{:#?}\n", ir);
+            println!("{:#?}", ir);
         }
     } else if matches.is_present("output_asm") {
         println!("Compiling...");

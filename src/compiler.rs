@@ -28,11 +28,11 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
     /// format! syntax.
     macro_rules! push_asm {
         ($fmt:expr) => {
-            (write!(&mut state.output, concat!("{}", $fmt, "\n"),
+            (writeln!(&mut state.output, concat!("{}", $fmt),
                    &indent)).unwrap()
         };
         ($fmt:expr, $($arg:tt)*) => {
-            (write!(&mut state.output, concat!("{}", $fmt, "\n"),
+            (writeln!(&mut state.output, concat!("{}", $fmt),
                    &indent,
                    $($arg)*)).unwrap()
         };
