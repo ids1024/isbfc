@@ -22,7 +22,7 @@ fn offset_to_operand(offset: i32) -> String {
     }
 }
 
-fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
+fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
     let indent = String::from_utf8(vec![b' '; level * 4]).unwrap();
     /// Add line of assembly to output, with indentation and newline, using
     /// format! syntax.
@@ -41,7 +41,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
 
     let mut outbuffpos = 0;
     for token in tokens {
-        match token {
+        match *token {
             Add(offset, value) => {
                 let dest = offset_to_operand(offset);
                 if value == 1 && dest == "%r12" {
@@ -91,19 +91,19 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
                     push_asm!("movq (%rbx), %r12");
                 }
             }
-            Loop(content) => {
+            Loop(ref content) => {
                 state.loopnum += 1;
                 let curloop = state.loopnum;
                 push_asm!("jmp endloop{}", curloop);
                 push_asm!("loop{}:", curloop);
 
-                compile_iter(state, content, level + 1);
+                compile_iter(state, &content, level + 1);
 
                 push_asm!("endloop{}:", curloop);
                 push_asm!("test %r12, %r12");
                 push_asm!("jnz loop{}", curloop);
             }
-            If(offset, content) => {
+            If(offset, ref content) => {
                 state.ifnum += 1;
                 let curif = state.ifnum;
                 if offset == 0 {
@@ -113,7 +113,7 @@ fn compile_iter(state: &mut CompileState, tokens: Vec<Token>, level: usize) {
                 }
                 push_asm!("jz endif{}", curif);
 
-                compile_iter(state, content, level + 1);
+                compile_iter(state, &content, level + 1);
 
                 push_asm!("endif{}:\n", curif);
             }
@@ -183,8 +183,7 @@ impl IsbfcIR {
     pub fn compile(&self, tape_size: i32) -> String {
         let mut state = CompileState::default();
 
-        // XXX implement without clone
-        compile_iter(&mut state, self.tokens.clone(), 1);
+        compile_iter(&mut state, &self.tokens, 1);
 
         format!(concat!(".section .bss\n",
                         "    .lcomm strbuff, {outbuffsize}\n",
