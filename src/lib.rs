@@ -1,3 +1,16 @@
+//! Isbfc is an optimizing brainfuck compiler targeting x86_64 Linux
+//!
+//! # Examples
+//! ```
+//! extern crate isbfc;
+//!
+//! fn main() {
+//!     // 2048 is the tape length to use
+//!     let assembly = isbfc::parse(",[.,]").optimize().compile(2048);
+//!     print!("{}", assembly);
+//! }
+//! ```
+
 use std::fmt;
 
 mod token;
