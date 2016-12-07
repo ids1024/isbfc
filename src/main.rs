@@ -34,6 +34,11 @@ fn main() {
             .takes_value(true)
             .empty_values(false)
             .value_name("bytes"))
+        .arg(Arg::with_name("level")
+             .short("O")
+             .help("Optimization level")
+             .takes_value(true)
+             .default_value("1"))
         .arg(Arg::with_name("FILENAME")
             .help("Source file to compile")
             .required(true)
@@ -45,13 +50,18 @@ fn main() {
         tape_size = tape_size_str.parse::<i32>().unwrap();
     }
 
+    let level = matches.value_of("level").unwrap().parse::<u32>().unwrap();
+
     let path = matches.value_of("FILENAME").unwrap();
     let name = path.rsplitn(2, '.').last().unwrap();
     let mut file = File::open(&path).unwrap();
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
-    let ir = isbfc::parse(&code).optimize();
+    let mut ir = isbfc::parse(&code);
+    if level > 0 {
+        ir = ir.optimize();
+    }
 
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {
