@@ -3,14 +3,19 @@ use token::Token;
 use token::Token::*;
 use IsbfcIR;
 
-/// Parses a string of brainfuck code to isbfc's intermediate representation,
-/// without applying any optimization
-pub fn parse(code: &str) -> IsbfcIR {
-    let tokens = _parse(&mut code.chars());
-    IsbfcIR{tokens: tokens}
+#[derive(Debug)]
+pub enum ParseError {
+    UnclosedLoop,
+    ExtraCloseLoop
 }
 
-fn _parse(chars: &mut Chars) -> Vec<Token> {
+/// Parses a string of brainfuck code to isbfc's intermediate representation,
+/// without applying any optimization
+pub fn parse(code: &str) -> Result<IsbfcIR, ParseError> {
+    _parse(&mut code.chars(), 0).map(|x| IsbfcIR{tokens: x})
+}
+
+fn _parse(chars: &mut Chars, level: u32) -> Result<Vec<Token>, ParseError> {
     let mut tokens = Vec::new();
     while let Some(i) = chars.next() {
         match i {
@@ -18,9 +23,13 @@ fn _parse(chars: &mut Chars) -> Vec<Token> {
             '-' => tokens.push(Add(0, -1)),
             '>' => tokens.push(Move(1)),
             '<' => tokens.push(Move(-1)),
-            '[' => tokens.push(Loop(_parse(chars))),
+            '[' => tokens.push(Loop(_parse(chars, level+1)?)),
             ']' => {
-                break;
+                return if level == 0 {
+                    Err(ParseError::ExtraCloseLoop)
+                } else {
+                    Ok(tokens)
+                };
             }
             ',' => tokens.push(Input),
             '.' => {
@@ -30,6 +39,10 @@ fn _parse(chars: &mut Chars) -> Vec<Token> {
             _ => (),
         };
     }
-
-    tokens
+    
+    if level != 0 {
+        Err(ParseError::UnclosedLoop)
+    } else {
+        Ok(tokens)
+    }
 }

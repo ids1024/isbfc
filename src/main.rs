@@ -59,7 +59,7 @@ fn main() {
     let mut code = String::new();
     file.read_to_string(&mut code).unwrap();
 
-    let mut ir = isbfc::parse(&code);
+    let mut ir = isbfc::parse(&code).unwrap();
     if level > 0 {
         ir = ir.optimize();
     }
