@@ -6,7 +6,7 @@
 //!
 //! fn main() {
 //!     // 2048 is the tape length to use
-//!     let assembly = isbfc::parse(",[.,]").optimize().compile(2048);
+//!     let assembly = isbfc::parse(",[.,]").unwrap().optimize().compile(2048);
 //!     print!("{}", assembly);
 //! }
 //! ```
