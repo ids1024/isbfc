@@ -30,14 +30,16 @@ fn main() {
             .value_name("file"))
         .arg(Arg::with_name("tape_size")
             .long("tape-size")
-            .help("Size of tape; defaults to 8192")
+            .help("Size of tape")
             .takes_value(true)
             .empty_values(false)
+            .default_value("8192")
             .value_name("bytes"))
         .arg(Arg::with_name("level")
              .short("O")
              .help("Optimization level")
              .takes_value(true)
+             .empty_values(false)
              .default_value("1"))
         .arg(Arg::with_name("FILENAME")
             .help("Source file to compile")
@@ -45,12 +47,11 @@ fn main() {
             .index(1))
         .get_matches();
 
-    let mut tape_size = 8192;
-    if let Some(tape_size_str) = matches.value_of("tape_size") {
-        tape_size = tape_size_str.parse::<i32>().unwrap();
-    }
+    let tape_size = matches.value_of("tape_size").unwrap()
+        .parse::<i32>().unwrap();
 
-    let level = matches.value_of("level").unwrap().parse::<u32>().unwrap();
+    let level = matches.value_of("level").unwrap()
+        .parse::<u32>().unwrap();
 
     let path = matches.value_of("FILENAME").unwrap();
     let name = path.rsplitn(2, '.').last().unwrap();
