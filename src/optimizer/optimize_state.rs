@@ -31,9 +31,8 @@ impl OptimizeState {
     }
 
     pub fn add(&mut self, offset: i32, mut value: i32) {
-        if self.sets.contains_key(&offset) {
-            value = self.sets.get(&offset).unwrap() + value;
-            self.sets.insert(offset, value);
+        if let Some(set) = self.sets.get_mut(&offset) {
+            *set += value;
         } else {
             value = self.adds.get(&offset).unwrap_or(&0) + value;
             if value != 0 {
