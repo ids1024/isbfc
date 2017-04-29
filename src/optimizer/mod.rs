@@ -70,8 +70,8 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
             Output => do_output = true,
             LoadOut(mut offset, add) => {
                 offset += state.shift;
-                state.tokens.push(if state.sets.contains_key(&offset) {
-                    LoadOutSet(state.sets.get(&offset).unwrap() + add)
+                state.tokens.push(if let Some(set) = state.sets.get_mut(&offset) {
+                    LoadOutSet(*set + add)
                 } else {
                     LoadOut(offset, state.adds.get(&offset).unwrap_or(&0) + add)
                 });
@@ -111,10 +111,7 @@ fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
     } else if inner.shift == 0 && inner.tokens.is_empty() && inner.adds.get(&0) == Some(&-1) {
         let contents = inner.adds.iter().filter_map(|(offset, value)| {
             if *offset != 0 {
-                let src = 0;
-                let dest = *offset;
-                let mul = *value;
-                Some(MulCopy(src, dest, mul))
+                Some(MulCopy(0, *offset, *value))
             } else {
                 None
             }
