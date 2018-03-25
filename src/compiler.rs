@@ -4,6 +4,9 @@ use token::Token;
 use token::Token::*;
 use IsbfcIR;
 
+#[cfg(target_os = "redox")]
+extern crate syscall;
+
 #[derive(Default)]
 struct CompileState {
     output: String,
@@ -133,11 +136,26 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
             }
             Input => {
                 push_asm!("");
-                push_asm!("xor %rax, %rax");
-                push_asm!("xor %rdi, %rdi");
-                push_asm!("movq %rbx, %rsi");
-                push_asm!("movq $1, %rdx");
-                push_asm!("syscall");
+
+				#[cfg(target_os = "redox")]
+				{
+					push_asm!("movq ${}, %rax", syscall::SYS_READ);
+					push_asm!("movq %rbx, %rcx");
+					push_asm!("xor %rbx, %rbx");
+					push_asm!("movq $1, %rdx");
+					push_asm!("int $0x80");
+					push_asm!("movq %rcx, %rbx");
+				}
+
+				#[cfg(not(target_os = "redox"))]
+				{
+					push_asm!("xor %rax, %rax");
+					push_asm!("xor %rdi, %rdi");
+					push_asm!("movq %rbx, %rsi");
+					push_asm!("movq $1, %rdx");
+					push_asm!("syscall");
+				}
+
                 push_asm!("movq (%rbx), %r12\n");
             }
             LoadOut(offset, add) => {
@@ -161,11 +179,25 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
                 outbuffpos += 1;
             }
             Output => {
-                push_asm!("movq $1, %rax");
-                push_asm!("movq $1, %rdi");
-                push_asm!("movq $strbuff, %rsi");
-                push_asm!("movq ${}, %rdx", outbuffpos);
-                push_asm!("syscall\n");
+				#[cfg(target_os = "redox")]
+				{
+					push_asm!("movq ${}, %rax", syscall::SYS_WRITE);
+					push_asm!("movq %rbx, %r11");
+					push_asm!("movq $1, %rbx");
+					push_asm!("movq $strbuff, %rcx");
+					push_asm!("movq ${}, %rdx", outbuffpos);
+					push_asm!("int $0x80");
+					push_asm!("movq %r11, %rbx\n");
+				}
+
+				#[cfg(not(target_os = "redox"))]
+				{
+					push_asm!("movq $1, %rax");
+					push_asm!("movq $1, %rdi");
+					push_asm!("movq $strbuff, %rsi");
+					push_asm!("movq ${}, %rdx", outbuffpos);
+					push_asm!("syscall\n");
+				}
 
                 if state.outbuffsize < outbuffpos + 8 {
                     state.outbuffsize = outbuffpos + 8;
@@ -185,6 +217,17 @@ impl IsbfcIR {
 
         compile_iter(&mut state, &self.tokens, 1);
 
+        // Exit syscall
+		#[cfg(not(target_os = "redox"))]
+        let exit = concat!("    movq $60, %rax\n",
+                           "    movq $0, %rdi\n",
+                           "    syscall\n");
+		#[cfg(target_os = "redox")]
+        let exit = format!(concat!("    movq ${}, %rax\n",
+                                   "    movq $0, %rdi\n",
+                                   "    int $0x80\n"),
+                           syscall::SYS_EXIT);
+
         format!(concat!(".section .bss\n",
                         "    .lcomm strbuff, {outbuffsize}\n",
                         "    .lcomm mem, {}\n",
@@ -195,13 +238,12 @@ impl IsbfcIR {
                         "    xor %r12, %r12\n",
                         "    movq $startidx, %rbx\n\n",
                         "{}\n",
-                        // Exit syscall
-                        "    movq $60, %rax\n",
-                        "    movq $0, %rdi\n",
-                        "    syscall\n"),
+                        "{exit_syscall}\n",
+),
                 tape_size,
                 tape_size / 2,
                 state.output,
-                outbuffsize = state.outbuffsize)
+                outbuffsize = state.outbuffsize,
+                exit_syscall = exit)
     }
 }
