@@ -3,9 +3,9 @@ use std::iter::FromIterator;
 mod optimize_state;
 use self::optimize_state::OptimizeState;
 
-use token::Token;
-use token::Token::*;
-use IsbfcIR;
+use crate::token::Token;
+use crate::token::Token::*;
+use crate::IsbfcIR;
 
 fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
     let mut do_output = false;

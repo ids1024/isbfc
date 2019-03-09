@@ -18,8 +18,8 @@ mod parser;
 mod optimizer;
 mod compiler;
 
-pub use token::Token;
-pub use parser::parse;
+pub use crate::token::Token;
+pub use crate::parser::parse;
 
 
 /// Intermediate representation used by isbfc

@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
-use token::Token;
-use token::Token::*;
-use IsbfcIR;
+use crate::token::Token;
+use crate::token::Token::*;
+use crate::IsbfcIR;
 
 #[cfg(target_os = "redox")]
 extern crate syscall;

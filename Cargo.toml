@@ -5,6 +5,7 @@ authors = ["Ian D. Scott <ian@iandouglasscott.com>"]
 description = "Brainfuck compiler for x86_64"
 repository = "https://github.com/ids1024/isbfc"
 license = "MIT"
+edition = "2018"
 
 [[bin]]
 doc = false

@@ -1,7 +1,7 @@
 use std::str::Chars;
-use token::Token;
-use token::Token::*;
-use IsbfcIR;
+use crate::token::Token;
+use crate::token::Token::*;
+use crate::IsbfcIR;
 
 #[derive(Debug)]
 pub enum ParseError {
