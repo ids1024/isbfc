@@ -62,10 +62,10 @@ fn interp_iter(mem: &mut [i32; BUFSIZE],
 fn main() {
     let path = env::args().nth(1).unwrap();
     let mut file = File::open(&path).unwrap();
-    let mut code = String::new();
-    file.read_to_string(&mut code).unwrap();
+    let mut code = Vec::new();
+    file.read_to_end(&mut code).unwrap();
 
-    let tokens = isbfc::parse(code.as_str()).unwrap().optimize().tokens;
+    let tokens = isbfc::parse(&code).unwrap().optimize().tokens;
 
     let mut mem: [i32; BUFSIZE] = [0; BUFSIZE];
     let mut cur = BUFSIZE / 2;

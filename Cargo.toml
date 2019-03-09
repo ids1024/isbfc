@@ -17,6 +17,7 @@ path = "src/bin/bfinterp.rs"
 
 [dependencies]
 clap = "2.11"
+unicode-width = "0.1"
 
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.1"

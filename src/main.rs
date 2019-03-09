@@ -1,6 +1,6 @@
 use std::io::prelude::*;
 use std::fs::File;
-use std::process::{Command, Stdio};
+use std::process::{self, Command, Stdio};
 
 extern crate clap;
 use clap::{Arg, ArgGroup, App};
@@ -56,10 +56,16 @@ fn main() {
     let path = matches.value_of("FILENAME").unwrap();
     let name = path.rsplitn(2, '.').last().unwrap();
     let mut file = File::open(&path).unwrap();
-    let mut code = String::new();
-    file.read_to_string(&mut code).unwrap();
+    let mut code = Vec::new();
+    file.read_to_end(&mut code).unwrap();
 
-    let mut ir = isbfc::parse(&code).unwrap();
+    let mut ir = match isbfc::parse(&code) {
+        Ok(ir) => ir,
+        Err(err) => {
+            println!("Parsing error: {}", err);
+            process::exit(1);
+        }
+    };
     if level > 0 {
         ir = ir.optimize();
     }
