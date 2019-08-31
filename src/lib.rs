@@ -13,6 +13,8 @@
 
 use std::fmt;
 
+#[macro_use]
+mod macros;
 mod compiler;
 mod optimizer;
 mod parser;
