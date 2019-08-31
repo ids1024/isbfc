@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use crate::token::Token;
+use std::collections::BTreeMap;
 
 #[derive(Default)]
 pub struct OptimizeState {

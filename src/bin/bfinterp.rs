@@ -4,9 +4,9 @@
 // bugs.
 
 use std::env;
+use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::fs::File;
 
 extern crate isbfc;
 use isbfc::Token;
@@ -14,10 +14,12 @@ use isbfc::Token::*;
 
 const BUFSIZE: usize = 8192;
 
-fn interp_iter(mem: &mut [i32; BUFSIZE],
-               cur: &mut usize,
-               outbuff: &mut String,
-               tokens: &Vec<Token>) {
+fn interp_iter(
+    mem: &mut [i32; BUFSIZE],
+    cur: &mut usize,
+    outbuff: &mut String,
+    tokens: &Vec<Token>,
+) {
     for token in tokens {
         match *token {
             Add(offset, value) => mem[(*cur as i32 + offset) as usize] += value,

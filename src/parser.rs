@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 #[derive(Debug)]
 pub enum ParseErrorType {
     UnclosedLoop,
-    ExtraCloseLoop
+    ExtraCloseLoop,
 }
 use ParseErrorType::*;
 
@@ -24,10 +24,10 @@ impl ParseError {
     fn new(err: ParseErrorType, code: &[u8], i: usize) -> Self {
         let (line, linenum, offset) = find_line(code, i);
         Self {
-             err,
-             line: line.into(),
-             linenum,
-             offset
+            err,
+            line: line.into(),
+            linenum,
+            offset,
         }
     }
 }
@@ -40,12 +40,14 @@ impl fmt::Display for ParseError {
         match self.err {
             UnclosedLoop => {
                 write!(f, "reached EOF with unterminated loop\n")?;
-                write!(f, "Loop started at {}:{}\n",
-                       self.linenum, self.offset)?;
+                write!(f, "Loop started at {}:{}\n", self.linenum, self.offset)?;
             }
             ExtraCloseLoop => {
-                write!(f, "[ found at {}:{} when not in a loop\n",
-                       self.linenum, self.offset)?;
+                write!(
+                    f,
+                    "[ found at {}:{} when not in a loop\n",
+                    self.linenum, self.offset
+                )?;
             }
         };
 
@@ -62,7 +64,7 @@ impl Error for ParseError {}
 /// without applying any optimization
 pub fn parse(code: &[u8]) -> Result<IsbfcIR, ParseError> {
     let mut i = 0;
-    _parse(code, &mut i, 0).map(|x| IsbfcIR{tokens: x})
+    _parse(code, &mut i, 0).map(|x| IsbfcIR { tokens: x })
 }
 
 fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseError> {
@@ -78,7 +80,7 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseErr
             b'-' => tokens.push(Add(0, -1)),
             b'>' => tokens.push(Move(1)),
             b'<' => tokens.push(Move(-1)),
-            b'[' => tokens.push(Loop(_parse(code, i, level+1)?)),
+            b'[' => tokens.push(Loop(_parse(code, i, level + 1)?)),
             b']' => {
                 return if level == 0 {
                     Err(ParseError::new(ExtraCloseLoop, code, *i - 1))
@@ -94,7 +96,7 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseErr
             _ => (),
         };
     }
-    
+
     if level != 0 {
         Err(ParseError::new(UnclosedLoop, code, start))
     } else {
@@ -105,6 +107,9 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseErr
 fn find_line(code: &[u8], i: usize) -> (&[u8], usize, usize) {
     let offset = code[0..i].iter().rev().take_while(|x| **x != b'\n').count();
     let end = i + code[i..].iter().take_while(|x| **x != b'\n').count();
-    let linenum = code[0..(i-offset)].iter().filter(|x| **x == b'\n').count();
+    let linenum = code[0..(i - offset)]
+        .iter()
+        .filter(|x| **x == b'\n')
+        .count();
     (&code[(i - offset)..end], linenum, offset)
 }

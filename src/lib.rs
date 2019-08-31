@@ -13,19 +13,18 @@
 
 use std::fmt;
 
-mod token;
-mod parser;
-mod optimizer;
 mod compiler;
+mod optimizer;
+mod parser;
+mod token;
 
-pub use crate::token::Token;
 pub use crate::parser::parse;
-
+pub use crate::token::Token;
 
 /// Intermediate representation used by isbfc
 pub struct IsbfcIR {
     /// Syntax tree of tokens
-    pub tokens: Vec<Token>
+    pub tokens: Vec<Token>,
 }
 
 impl fmt::Debug for IsbfcIR {

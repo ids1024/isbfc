@@ -46,8 +46,10 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
                 if let Some(value) = state.sets.get(&src).cloned() {
                     state.add(dest, value * mul);
                 } else {
-                    if state.sets.contains_key(&dest) || state.adds.contains_key(&src) ||
-                       state.adds.contains_key(&dest) {
+                    if state.sets.contains_key(&dest)
+                        || state.adds.contains_key(&src)
+                        || state.adds.contains_key(&dest)
+                    {
                         state.apply_adds_sets();
                     }
                     state.tokens.push(MulCopy(src, dest, mul));
@@ -70,11 +72,13 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
             Output => do_output = true,
             LoadOut(mut offset, add) => {
                 offset += state.shift;
-                state.tokens.push(if let Some(set) = state.sets.get_mut(&offset) {
-                    LoadOutSet(*set + add)
-                } else {
-                    LoadOut(offset, state.adds.get(&offset).unwrap_or(&0) + add)
-                });
+                state
+                    .tokens
+                    .push(if let Some(set) = state.sets.get_mut(&offset) {
+                        LoadOutSet(*set + add)
+                    } else {
+                        LoadOut(offset, state.adds.get(&offset).unwrap_or(&0) + add)
+                    });
             }
             Loop(ref contents) => _optimize_loop(contents, &mut state),
             LoadOutSet(value) => state.tokens.push(LoadOutSet(value)),
@@ -93,11 +97,14 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
 fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
     let mut inner = _optimize(tokens);
 
-    if inner.shift != 0 && inner.sets.is_empty() && inner.adds.is_empty() &&
-       inner.tokens.is_empty() {
+    if inner.shift != 0 && inner.sets.is_empty() && inner.adds.is_empty() && inner.tokens.is_empty()
+    {
         outer.tokens.push(Scan(inner.shift));
-    } else if inner.shift == 0 && inner.tokens.is_empty() && inner.adds.contains_key(&0) &&
-              inner.adds.len() == 1 {
+    } else if inner.shift == 0
+        && inner.tokens.is_empty()
+        && inner.adds.contains_key(&0)
+        && inner.adds.len() == 1
+    {
         if !inner.sets.is_empty() {
             let mut iftokens = Vec::new();
             for (offset, value) in &inner.sets {
@@ -118,10 +125,13 @@ fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
         });
 
         if !inner.sets.is_empty() {
-            let iftokens = Vec::from_iter(inner.sets
-                .iter()
-                .map(|(offset, value)| Set(*offset, *value))
-                .chain(contents));
+            let iftokens = Vec::from_iter(
+                inner
+                    .sets
+                    .iter()
+                    .map(|(offset, value)| Set(*offset, *value))
+                    .chain(contents),
+            );
             outer.tokens.push(If(0, iftokens));
         } else {
             outer.tokens.extend(contents);
@@ -140,12 +150,12 @@ impl IsbfcIR {
     /// Returns an optimized version of the intermediate representation
     pub fn optimize(&self) -> IsbfcIR {
         // Ignore sets/adds/shifts at end of file
-        let mut oldtokens =_optimize(&self.tokens).tokens;
-        let mut newtokens =_optimize(&oldtokens).tokens;
+        let mut oldtokens = _optimize(&self.tokens).tokens;
+        let mut newtokens = _optimize(&oldtokens).tokens;
         while newtokens != oldtokens {
             oldtokens = newtokens;
             newtokens = _optimize(&oldtokens).tokens;
         }
-        IsbfcIR{tokens: newtokens}
+        IsbfcIR { tokens: newtokens }
     }
 }

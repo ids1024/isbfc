@@ -44,7 +44,6 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
         };
     }
 
-
     let mut outbuffpos = 0;
     for token in tokens {
         match *token {
@@ -91,9 +90,11 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
             Move(offset) => {
                 if offset != 0 {
                     push_asm!("movq %r12, (%rbx)");
-                    push_asm!("{add_sub} ${shift}, %rbx",
-                              add_sub = if offset > 0 { "addq" } else { "subq" },
-                              shift = offset.abs() * 8);
+                    push_asm!(
+                        "{add_sub} ${shift}, %rbx",
+                        add_sub = if offset > 0 { "addq" } else { "subq" },
+                        shift = offset.abs() * 8
+                    );
                     push_asm!("movq (%rbx), %r12");
                 }
             }
@@ -129,9 +130,11 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
                 push_asm!("movq %r12, (%rbx)");
                 push_asm!("jmp endloop{}", state.loopnum);
                 push_asm!("loop{}:", state.loopnum);
-                push_asm!("{add_sub} ${shift}, %rbx",
-                          add_sub = if offset > 0 { "addq" } else { "subq" },
-                          shift = offset.abs() * 8);
+                push_asm!(
+                    "{add_sub} ${shift}, %rbx",
+                    add_sub = if offset > 0 { "addq" } else { "subq" },
+                    shift = offset.abs() * 8
+                );
                 push_asm!("endloop{}:", state.loopnum);
                 push_asm!("cmp $0, (%rbx)");
                 push_asm!("jnz loop{}", state.loopnum);
@@ -140,24 +143,24 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
             Input => {
                 push_asm!("");
 
-				#[cfg(target_os = "redox")]
-				{
-					push_asm!("movq ${}, %rax", syscall::SYS_READ);
-					push_asm!("movq %rbx, %rcx");
-					push_asm!("xor %rbx, %rbx");
-					push_asm!("movq $1, %rdx");
-					push_asm!("int $0x80");
-					push_asm!("movq %rcx, %rbx");
-				}
+                #[cfg(target_os = "redox")]
+                {
+                    push_asm!("movq ${}, %rax", syscall::SYS_READ);
+                    push_asm!("movq %rbx, %rcx");
+                    push_asm!("xor %rbx, %rbx");
+                    push_asm!("movq $1, %rdx");
+                    push_asm!("int $0x80");
+                    push_asm!("movq %rcx, %rbx");
+                }
 
-				#[cfg(not(target_os = "redox"))]
-				{
-					push_asm!("xor %rax, %rax");
-					push_asm!("xor %rdi, %rdi");
-					push_asm!("movq %rbx, %rsi");
-					push_asm!("movq $1, %rdx");
-					push_asm!("syscall");
-				}
+                #[cfg(not(target_os = "redox"))]
+                {
+                    push_asm!("xor %rax, %rax");
+                    push_asm!("xor %rdi, %rdi");
+                    push_asm!("movq %rbx, %rsi");
+                    push_asm!("movq $1, %rdx");
+                    push_asm!("syscall");
+                }
 
                 push_asm!("movq (%rbx), %r12\n");
             }
@@ -182,25 +185,25 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
                 outbuffpos += 1;
             }
             Output => {
-				#[cfg(target_os = "redox")]
-				{
-					push_asm!("movq ${}, %rax", syscall::SYS_WRITE);
-					push_asm!("movq %rbx, %r11");
-					push_asm!("movq $1, %rbx");
-					push_asm!("movq $strbuff, %rcx");
-					push_asm!("movq ${}, %rdx", outbuffpos);
-					push_asm!("int $0x80");
-					push_asm!("movq %r11, %rbx\n");
-				}
+                #[cfg(target_os = "redox")]
+                {
+                    push_asm!("movq ${}, %rax", syscall::SYS_WRITE);
+                    push_asm!("movq %rbx, %r11");
+                    push_asm!("movq $1, %rbx");
+                    push_asm!("movq $strbuff, %rcx");
+                    push_asm!("movq ${}, %rdx", outbuffpos);
+                    push_asm!("int $0x80");
+                    push_asm!("movq %r11, %rbx\n");
+                }
 
-				#[cfg(not(target_os = "redox"))]
-				{
-					push_asm!("movq $1, %rax");
-					push_asm!("movq $1, %rdi");
-					push_asm!("movq $strbuff, %rsi");
-					push_asm!("movq ${}, %rdx", outbuffpos);
-					push_asm!("syscall\n");
-				}
+                #[cfg(not(target_os = "redox"))]
+                {
+                    push_asm!("movq $1, %rax");
+                    push_asm!("movq $1, %rdi");
+                    push_asm!("movq $strbuff, %rsi");
+                    push_asm!("movq ${}, %rdx", outbuffpos);
+                    push_asm!("syscall\n");
+                }
 
                 if state.outbuffsize < outbuffpos + 8 {
                     state.outbuffsize = outbuffpos + 8;
@@ -213,7 +216,6 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
     state.level -= 1;
 }
 
-
 impl IsbfcIR {
     /// Compiles the intermediate representation to x86_64 Linux assembly
     /// returning a String
@@ -223,32 +225,41 @@ impl IsbfcIR {
         compile_iter(&mut state, &self.tokens);
 
         // Exit syscall
-		#[cfg(not(target_os = "redox"))]
-        let exit = concat!("    movq $60, %rax\n",
-                           "    movq $0, %rdi\n",
-                           "    syscall\n");
-		#[cfg(target_os = "redox")]
-        let exit = format!(concat!("    movq ${}, %rax\n",
-                                   "    movq $0, %rdi\n",
-                                   "    int $0x80\n"),
-                           syscall::SYS_EXIT);
+        #[cfg(not(target_os = "redox"))]
+        let exit = concat!(
+            "    movq $60, %rax\n",
+            "    movq $0, %rdi\n",
+            "    syscall\n"
+        );
+        #[cfg(target_os = "redox")]
+        let exit = format!(
+            concat!(
+                "    movq ${}, %rax\n",
+                "    movq $0, %rdi\n",
+                "    int $0x80\n"
+            ),
+            syscall::SYS_EXIT
+        );
 
-        format!(concat!(".section .bss\n",
-                        "    .lcomm strbuff, {outbuffsize}\n",
-                        "    .lcomm mem, {}\n",
-                        "    .set startidx, mem + {}\n",
-                        ".section .text\n",
-                        ".global _start\n",
-                        "_start:\n",
-                        "    xor %r12, %r12\n",
-                        "    movq $startidx, %rbx\n\n",
-                        "{}\n",
-                        "{exit_syscall}\n",
-),
-                tape_size,
-                tape_size / 2,
-                state.output,
-                outbuffsize = state.outbuffsize,
-                exit_syscall = exit)
+        format!(
+            concat!(
+                ".section .bss\n",
+                "    .lcomm strbuff, {outbuffsize}\n",
+                "    .lcomm mem, {}\n",
+                "    .set startidx, mem + {}\n",
+                ".section .text\n",
+                ".global _start\n",
+                "_start:\n",
+                "    xor %r12, %r12\n",
+                "    movq $startidx, %rbx\n\n",
+                "{}\n",
+                "{exit_syscall}\n",
+            ),
+            tape_size,
+            tape_size / 2,
+            state.output,
+            outbuffsize = state.outbuffsize,
+            exit_syscall = exit
+        )
     }
 }
