@@ -16,7 +16,7 @@ name = "bfinterp"
 path = "src/bin/bfinterp.rs"
 
 [dependencies]
-clap = "2.11"
+clap = "2.33"
 unicode-width = "0.1"
 
 [target.'cfg(target_os = "redox")'.dependencies]
