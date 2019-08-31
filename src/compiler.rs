@@ -13,6 +13,7 @@ struct CompileState {
     loopnum: i32,
     ifnum: i32,
     outbuffsize: i32,
+    level: usize,
 }
 
 /// Takes an offset from the current cell, and returns a string in assembly code
@@ -25,8 +26,10 @@ fn offset_to_operand(offset: i32) -> String {
     }
 }
 
-fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
-    let indent = String::from_utf8(vec![b' '; level * 4]).unwrap();
+fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
+    state.level += 1;
+
+    let indent = String::from_utf8(vec![b' '; state.level * 4]).unwrap();
     /// Add line of assembly to output, with indentation and newline, using
     /// format! syntax.
     macro_rules! push_asm {
@@ -100,7 +103,7 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
                 push_asm!("jmp endloop{}", curloop);
                 push_asm!("loop{}:", curloop);
 
-                compile_iter(state, &content, level + 1);
+                compile_iter(state, &content);
 
                 push_asm!("endloop{}:", curloop);
                 push_asm!("test %r12, %r12");
@@ -116,7 +119,7 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
                 }
                 push_asm!("jz endif{}", curif);
 
-                compile_iter(state, &content, level + 1);
+                compile_iter(state, &content);
 
                 push_asm!("endif{}:\n", curif);
             }
@@ -206,6 +209,8 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>, level: usize) {
             }
         }
     }
+
+    state.level -= 1;
 }
 
 
@@ -215,7 +220,7 @@ impl IsbfcIR {
     pub fn compile(&self, tape_size: i32) -> String {
         let mut state = CompileState::default();
 
-        compile_iter(&mut state, &self.tokens, 1);
+        compile_iter(&mut state, &self.tokens);
 
         // Exit syscall
 		#[cfg(not(target_os = "redox"))]
