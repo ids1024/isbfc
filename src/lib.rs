@@ -20,10 +20,12 @@ mod elf;
 mod optimizer;
 mod parser;
 mod token;
+mod assembly;
 
 pub use crate::elf::{elf64_get_section, elf64_write};
 pub use crate::parser::parse;
 pub use crate::token::Token;
+pub use crate::assembly::{assemble, link};
 
 /// Intermediate representation used by isbfc
 pub struct IsbfcIR {
