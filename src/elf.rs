@@ -30,8 +30,6 @@ const PF_X: u32 = 1 << 0;
 const PF_W: u32 = 1 << 1;
 const PF_R: u32 = 1 << 2;
 
-const SHT_STRTAB: u32 = 3;
-
 const EHDR_SIZE: usize = 64;
 const PHDR_SIZE: usize = 56;
 const SHDR_SIZE: usize = 64;
@@ -105,7 +103,7 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
         e_ehsize: EHDR_SIZE as u16,
         e_phentsize: PHDR_SIZE as u16,
         e_phnum: 2,
-        e_shentsize: 0,
+        e_shentsize: SHDR_SIZE as u16,
         e_shnum: 0,
         e_shstrndx: 0,
     };
@@ -122,6 +120,8 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
     };
 
     let bss_offset = (size + 0x1000 - 1) & !(0x1000 - 1);
+
+    println!("{:x} - {:x}", bss_offset, bss_size);
 
     let phdr_bss = Elf64_Phdr {
         p_type: PT_LOAD,
@@ -143,29 +143,29 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
     vec
 }
 
-pub fn elf64_get_section(f: &mut (impl Read + Seek), name: &[u8]) -> io::Result<Option<Elf64_Shdr>> {
-    f.seek(SeekFrom::Start(0))?;
+fn elf64_read_strtab(f: &mut (impl Read + Seek), ehdr: &Elf64_Ehdr) -> io::Result<Vec<u8>> {
+    // Read section header for the string table
+    let mut shdr_buf = [0; SHDR_SIZE];
+    f.seek(SeekFrom::Start(ehdr.e_shoff + ehdr.e_shstrndx as u64 * SHDR_SIZE as u64))?;
+    f.read(&mut shdr_buf)?;
+    let shdr: Elf64_Shdr = unsafe { transmute(shdr_buf) };
 
+    // Read string table section
+    let mut strtab = Vec::with_capacity(shdr.sh_size as usize);
+    strtab.resize(shdr.sh_size as usize, 0);
+    f.seek(SeekFrom::Start(shdr.sh_offset))?;
+    f.read(&mut strtab)?;
+
+    Ok(strtab)
+}
+
+pub fn elf64_get_section(f: &mut (impl Read + Seek), name: &[u8]) -> io::Result<Option<Elf64_Shdr>> {
     let mut ehdr_buf = [0; EHDR_SIZE];
+    f.seek(SeekFrom::Start(0))?;
     f.read(&mut ehdr_buf)?;
     let ehdr: Elf64_Ehdr = unsafe { transmute(ehdr_buf) };
 
-    let mut strtab = Vec::new();
-
-    f.seek(SeekFrom::Start(ehdr.e_shoff))?;
-    for _ in 0..ehdr.e_shnum {
-        let mut shdr_buf = [0; SHDR_SIZE];
-        f.read(&mut shdr_buf)?;
-        let shdr: Elf64_Shdr = unsafe { transmute(shdr_buf) };
-
-        if shdr.sh_type == SHT_STRTAB {
-            let current = f.seek(SeekFrom::Current(0))?;
-            f.seek(SeekFrom::Start(shdr.sh_offset))?;
-            strtab.resize(shdr.sh_size as usize, 0);
-            f.read(&mut strtab)?;
-            f.seek(SeekFrom::Start(current))?;
-        }
-    }
+    let strtab = elf64_read_strtab(f, &ehdr)?;
 
     f.seek(SeekFrom::Start(ehdr.e_shoff))?;
     for _ in 0..ehdr.e_shnum {
