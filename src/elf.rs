@@ -2,7 +2,6 @@
 
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem::transmute;
-use std::ops::Range;
 
 use static_assertions::assert_eq_size;
 
@@ -23,13 +22,7 @@ type Elf64_Xword = u64;
 type Elf64_Addr = u64;
 type Elf64_Off = u64;
 
-const EI_MAG: Range<usize> = 0..4;
-const EI_CLASS: usize = 4;
-const EI_DATA: usize = 5;
-const EI_VERSION: usize = 6;
-const EI_OSABI: usize = 7;
-
-const ELFMAG: &[u8] = b"\x7fELF";
+const ELFMAG: [u8; 4] = *b"\x7fELF";
 const ELFCLASS64: u8 = 2;
 const ELFDATA2LSB: u8 = 1;
 const ELFOSABI_SYSV: u8 = 0;
@@ -46,15 +39,28 @@ const EHDR_SIZE: usize = 64;
 const PHDR_SIZE: usize = 56;
 const SHDR_SIZE: usize = 64;
 
+assert_eq_size!(ident_size_assert; Elf64_Ident, [u8; 16]);
 assert_eq_size!(ehdr_size_assert; Elf64_Ehdr, [u8; EHDR_SIZE]);
 assert_eq_size!(phdr_size_assert; Elf64_Phdr, [u8; PHDR_SIZE]);
 assert_eq_size!(shdr_size_assert; Elf64_Shdr, [u8; SHDR_SIZE]);
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+struct Elf64_Ident {
+    pub ei_mag: [u8; 4],
+    pub ei_class: u8,
+    pub ei_data: u8,
+    pub ei_version: u8,
+    pub ei_osabi: u8,
+    pub ei_abiversion: u8,
+    pub ei_pad: [u8; 7],
+}
 
 // ELF header
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 struct Elf64_Ehdr {
-    pub e_ident: [u8; 16],
+    pub e_ident: Elf64_Ident,
     pub e_type: Elf64_Half,
     pub e_machine: Elf64_Half,
     pub e_version: Elf64_Word,
@@ -105,15 +111,16 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
     let hdr_size = (EHDR_SIZE + 2 * PHDR_SIZE) as u64;
     let hdr_size_padded = (hdr_size + 0x1000 - 1) & !(0x1000 - 1);
 
-    let mut e_ident = [0u8; 16];
-    e_ident[EI_MAG].copy_from_slice(ELFMAG);
-    e_ident[EI_CLASS] = ELFCLASS64;
-    e_ident[EI_DATA] = ELFDATA2LSB;
-    e_ident[EI_VERSION] = 1;
-    e_ident[EI_OSABI] = ELFOSABI_SYSV;
-
     let ehdr = Elf64_Ehdr {
-        e_ident,
+        e_ident: Elf64_Ident {
+            ei_mag: ELFMAG,
+            ei_class: ELFCLASS64,
+            ei_data: ELFDATA2LSB,
+            ei_version: 1,
+            ei_osabi: ELFOSABI_SYSV,
+            ei_abiversion: 0,
+            ei_pad: [0; 7]
+        },
         e_type: ET_EXEC,
         e_machine: EM_X86_64,
         e_version: 1,
