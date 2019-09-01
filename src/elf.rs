@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
 
-use std::ops::Range;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem::transmute;
+use std::ops::Range;
 
 use static_assertions::assert_eq_size;
 
@@ -168,7 +168,9 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
 fn elf64_read_strtab(f: &mut (impl Read + Seek), ehdr: &Elf64_Ehdr) -> io::Result<Vec<u8>> {
     // Read section header for the string table
     let mut shdr_buf = [0; SHDR_SIZE];
-    f.seek(SeekFrom::Start(ehdr.e_shoff + ehdr.e_shstrndx as u64 * SHDR_SIZE as u64))?;
+    f.seek(SeekFrom::Start(
+        ehdr.e_shoff + ehdr.e_shstrndx as u64 * SHDR_SIZE as u64,
+    ))?;
     f.read(&mut shdr_buf)?;
     let shdr: Elf64_Shdr = unsafe { transmute(shdr_buf) };
 
@@ -181,7 +183,10 @@ fn elf64_read_strtab(f: &mut (impl Read + Seek), ehdr: &Elf64_Ehdr) -> io::Resul
     Ok(strtab)
 }
 
-pub fn elf64_get_section(f: &mut (impl Read + Seek), name: &[u8]) -> io::Result<Option<Elf64_Shdr>> {
+pub fn elf64_get_section(
+    f: &mut (impl Read + Seek),
+    name: &[u8],
+) -> io::Result<Option<Elf64_Shdr>> {
     let mut ehdr_buf = [0; EHDR_SIZE];
     f.seek(SeekFrom::Start(0))?;
     f.read(&mut ehdr_buf)?;

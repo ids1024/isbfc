@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::process::{self, Command, Stdio};
 use std::os::unix::fs::PermissionsExt;
+use std::process::{self, Command, Stdio};
 
 extern crate clap;
 use clap::{App, Arg, ArgGroup};
@@ -48,8 +48,8 @@ fn main() {
         )
         .arg(
             Arg::with_name("minimal_elf")
-                 .long("minimal-elf")
-                 .help("Generate minimal ELF executable")
+                .long("minimal-elf")
+                .help("Generate minimal ELF executable"),
         )
         .arg(
             Arg::with_name("level")
@@ -118,8 +118,12 @@ fn main() {
 
 fn object_to_binary(o_name: &str) -> (Vec<u8>, u64) {
     let mut o_file = File::open(o_name).unwrap();
-    let text = isbfc::elf64_get_section(&mut o_file, b".text").unwrap().unwrap();
-    let bss = isbfc::elf64_get_section(&mut o_file, b".bss").unwrap().unwrap();
+    let text = isbfc::elf64_get_section(&mut o_file, b".text")
+        .unwrap()
+        .unwrap();
+    let bss = isbfc::elf64_get_section(&mut o_file, b".bss")
+        .unwrap()
+        .unwrap();
     let bss_offset = (text.sh_size + 0x1000 - 1) & !(0x1000 - 1);
     let bss_size = bss.sh_size;
 

@@ -16,14 +16,14 @@ use std::fmt;
 #[macro_use]
 mod macros;
 mod compiler;
+mod elf;
 mod optimizer;
 mod parser;
 mod token;
-mod elf;
 
+pub use crate::elf::{elf64_get_section, elf64_write};
 pub use crate::parser::parse;
 pub use crate::token::Token;
-pub use crate::elf::{elf64_write, elf64_get_section};
 
 /// Intermediate representation used by isbfc
 pub struct IsbfcIR {
