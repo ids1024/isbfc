@@ -1,19 +1,21 @@
 #![allow(non_camel_case_types)]
 
+use std::ops::Range;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem::transmute;
 
 use static_assertions::assert_eq_size;
-
-// TODO static assertion
 
 // Minimal ELF support, sufficient for a very simple 64-bit static Linux
 // executable.
 
 // Sources:
 // * /usr/include/elf.h
+// * https://wiki.osdev.org/ELF_Tutorial
 // * https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
 // * https://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
+// * https://unix.stackexchange.com/questions/132036/why-does-readelf-show-system-v-as-my-os-instead-of-linux
+// * http://www.sco.com/developers/gabi/latest/ch4.eheader.html
 
 type Elf64_Half = u16;
 type Elf64_Word = u32;
@@ -21,7 +23,15 @@ type Elf64_Xword = u64;
 type Elf64_Addr = u64;
 type Elf64_Off = u64;
 
-const ELFOSABI_LINUX: u8 = 3;
+const EI_MAG: Range<usize> = 0..4;
+const EI_CLASS: usize = 4;
+const EI_DATA: usize = 5;
+const EI_VERSION: usize = 6;
+const EI_OSABI: usize = 7;
+
+const ELFCLASS64: u8 = 2;
+const ELFDATA2LSB: u8 = 1;
+const ELFOSABI_SYSV: u8 = 0;
 const ET_EXEC: u16 = 2;
 const EM_X86_64: u16 = 62;
 const PT_LOAD: u32 = 1;
@@ -93,8 +103,15 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
     let hdr_size = (EHDR_SIZE + 2 * PHDR_SIZE) as u64;
     let hdr_size_padded = (hdr_size + 0x1000 - 1) & !(0x1000 - 1);
 
+    let mut e_ident = [0u8; 16];
+    e_ident[EI_MAG].copy_from_slice(b"\x7fELF");
+    e_ident[EI_CLASS] = ELFCLASS64;
+    e_ident[EI_DATA] = ELFDATA2LSB;
+    e_ident[EI_VERSION] = 1;
+    e_ident[EI_OSABI] = ELFOSABI_SYSV;
+
     let ehdr = Elf64_Ehdr {
-        e_ident: [0x7f, b'E', b'L', b'F', 2, 1, 1, ELFOSABI_LINUX, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        e_ident,
         e_type: ET_EXEC,
         e_machine: EM_X86_64,
         e_version: 1,
