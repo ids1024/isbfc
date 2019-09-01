@@ -19,6 +19,7 @@ use static_assertions::assert_eq_size;
 type Elf64_Half = u16;
 type Elf64_Word = u32;
 type Elf64_Xword = u64;
+type Elf64_Sxword = i64;
 type Elf64_Addr = u64;
 type Elf64_Off = u64;
 
@@ -104,6 +105,14 @@ pub struct Elf64_Shdr {
     pub sh_info: Elf64_Word,
     pub sh_addralign: Elf64_Xword,
     pub sh_entsize: Elf64_Xword,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Elf64_Rela {
+    pub r_offset: Elf64_Addr,
+    pub r_info: Elf64_Xword,
+    pub r_addend: Elf64_Sxword,
 }
 
 pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result<()> {
