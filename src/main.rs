@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::process::{self, Command, Stdio};
+use std::os::unix::fs::PermissionsExt;
 
 extern crate clap;
 use clap::{App, Arg, ArgGroup};
@@ -44,6 +45,11 @@ fn main() {
                 .empty_values(false)
                 .default_value("8192")
                 .value_name("bytes"),
+        )
+        .arg(
+            Arg::with_name("minimal_elf")
+                 .long("minimal-elf")
+                 .help("Generate minimal ELF executable")
         )
         .arg(
             Arg::with_name("level")
@@ -105,11 +111,38 @@ fn main() {
         let output = ir.compile(tape_size);
         let out_name = matches.value_of("out_name").unwrap_or(name);
         let debug = matches.is_present("debugging_symbols");
-        asm_and_link(&output, &name, &out_name, debug);
+        let minimal = matches.is_present("minimal_elf");
+        asm_and_link(&output, &name, &out_name, debug, minimal);
     }
 }
 
-fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
+fn object_to_binary(o_name: &str) -> (Vec<u8>, u64) {
+    let mut o_file = File::open(o_name).unwrap();
+    let text = isbfc::elf64_get_section(&mut o_file, b".text").unwrap().unwrap();
+    let bss = isbfc::elf64_get_section(&mut o_file, b".bss").unwrap().unwrap();
+    let bss_offset = (text.sh_size + 0x1000 - 1) & !(0x1000 - 1);
+    let bss_size = bss.sh_size;
+
+    println!("{} - {}", bss_offset, bss_size);
+
+    let bin = Command::new("ld")
+        .arg("--oformat")
+        .arg("binary")
+        .arg("-Ttext")
+        .arg("0x401000")
+        .arg("-Tbss")
+        .arg(format!("0x{:x}", 0x401000 + bss_offset))
+        .arg("-o")
+        .arg("/dev/stdout")
+        .arg(o_name)
+        .output()
+        .unwrap()
+        .stdout;
+
+    (bin, bss_size)
+}
+
+fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {
     println!("Assembling...");
 
     let mut command = Command::new("as");
@@ -117,9 +150,9 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
         command.arg("-g");
     }
     let mut child = command
-        .arg("-") // Standard input
         .arg("-o")
         .arg(format!("{}.o", name))
+        .arg("-") // Standard input
         .stdin(Stdio::piped())
         .spawn()
         .unwrap();
@@ -132,12 +165,30 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool) {
         .unwrap();
 
     let status = child.wait().unwrap();
-    if status.code() == Some(0) {
-        println!("Linking...");
+    if status.code() != Some(0) {
+        process::exit(1);
+    }
+
+    println!("Linking...");
+
+    let o_name = format!("{}.o", name);
+
+    if minimal {
+        let (bin, bss_size) = object_to_binary(&o_name);
+
+        let hdr = isbfc::create_elf64_hdr(bin.len() as u64, bss_size);
+
+        let mut file = File::create(out_name).unwrap();
+        file.write(&hdr).unwrap();
+        file.write(&bin).unwrap();
+        let mut permissions = file.metadata().unwrap().permissions();
+        permissions.set_mode(permissions.mode() | 0o111);
+        file.set_permissions(permissions).unwrap();
+    } else {
         Command::new("ld")
-            .arg(format!("{}.o", name))
             .arg("-o")
             .arg(out_name)
+            .arg(o_name)
             .spawn()
             .unwrap();
     }

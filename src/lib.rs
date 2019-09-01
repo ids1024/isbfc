@@ -19,9 +19,11 @@ mod compiler;
 mod optimizer;
 mod parser;
 mod token;
+mod elf;
 
 pub use crate::parser::parse;
 pub use crate::token::Token;
+pub use crate::elf::{create_elf64_hdr, elf64_get_section};
 
 /// Intermediate representation used by isbfc
 pub struct IsbfcIR {

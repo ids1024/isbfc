@@ -242,8 +242,8 @@ impl IsbfcIR {
                 "{}\n",
                 "{exit_syscall}\n",
             ),
-            tape_size,
-            tape_size / 2,
+            tape_size * 8,
+            (tape_size / 2) * 8,
             state.output,
             outbuffsize = state.outbuffsize,
             exit_syscall = exit
