@@ -29,9 +29,11 @@ const EI_DATA: usize = 5;
 const EI_VERSION: usize = 6;
 const EI_OSABI: usize = 7;
 
+const ELFMAG: &[u8] = b"\x7fELF";
 const ELFCLASS64: u8 = 2;
 const ELFDATA2LSB: u8 = 1;
 const ELFOSABI_SYSV: u8 = 0;
+
 const ET_EXEC: u16 = 2;
 const EM_X86_64: u16 = 62;
 const PT_LOAD: u32 = 1;
@@ -104,7 +106,7 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
     let hdr_size_padded = (hdr_size + 0x1000 - 1) & !(0x1000 - 1);
 
     let mut e_ident = [0u8; 16];
-    e_ident[EI_MAG].copy_from_slice(b"\x7fELF");
+    e_ident[EI_MAG].copy_from_slice(ELFMAG);
     e_ident[EI_CLASS] = ELFCLASS64;
     e_ident[EI_DATA] = ELFDATA2LSB;
     e_ident[EI_VERSION] = 1;
