@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::os::unix::fs::PermissionsExt;
 use std::process::{self, Command, Stdio};
@@ -144,30 +145,32 @@ fn object_to_binary(o_name: &str) -> (Vec<u8>, u64) {
     (bin, bss_size)
 }
 
-fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {
-    println!("Assembling...");
-
+fn assemble(code: &str, out_name: &str, debug: bool) -> io::Result<Option<i32>> {
     let mut command = Command::new("as");
     if debug {
         command.arg("-g");
     }
     let mut child = command
         .arg("-o")
-        .arg(format!("{}.o", name))
+        .arg(out_name)
         .arg("-") // Standard input
         .stdin(Stdio::piped())
-        .spawn()
-        .unwrap();
+        .spawn()?;
 
     child
         .stdin
         .take()
         .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap();
+        .write_all(code.as_bytes())?;
 
-    let status = child.wait().unwrap();
-    if status.code() != Some(0) {
+    Ok(child.wait()?.code())
+}
+
+fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {
+    println!("Assembling...");
+
+    let code = assemble(code, &format!("{}.o", name), debug).unwrap();
+    if code != Some(0) {
         process::exit(1);
     }
 
