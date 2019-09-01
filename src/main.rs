@@ -189,15 +189,13 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bo
 
     println!("Assembling...");
 
-    let code = assemble(code, &o_name, debug).unwrap();
-    if code != Some(0) {
+    if assemble(code, &o_name, debug).unwrap() != Some(0) {
         process::exit(1);
     }
 
     println!("Linking...");
 
-    let code = link(&o_name, out_name, minimal).unwrap();
-    if code != Some(0) {
+    if link(&o_name, out_name, minimal).unwrap() != Some(0) {
         process::exit(1);
     }
 }
