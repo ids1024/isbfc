@@ -166,32 +166,41 @@ fn assemble(code: &str, out_name: &str, debug: bool) -> io::Result<Option<i32>> 
     Ok(child.wait()?.code())
 }
 
+fn link(o_name: &str, out_name: &str, minimal: bool) -> io::Result<Option<i32>> {
+    if minimal {
+        let (bin, bss_size) = object_to_binary(&o_name);
+
+        let mut file = File::create(out_name)?;
+        isbfc::elf64_write(&mut file, &bin, bss_size)?;
+        let mut permissions = file.metadata().unwrap().permissions();
+        permissions.set_mode(permissions.mode() | 0o111);
+        file.set_permissions(permissions)?;
+        Ok(Some(0))
+    } else {
+        Ok(Command::new("ld")
+            .arg("-o")
+            .arg(out_name)
+            .arg(o_name)
+            .spawn()?
+            .wait()?
+            .code())
+    }
+}
+
 fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {
+    let o_name = format!("{}.o", name);
+
     println!("Assembling...");
 
-    let code = assemble(code, &format!("{}.o", name), debug).unwrap();
+    let code = assemble(code, &o_name, debug).unwrap();
     if code != Some(0) {
         process::exit(1);
     }
 
     println!("Linking...");
 
-    let o_name = format!("{}.o", name);
-
-    if minimal {
-        let (bin, bss_size) = object_to_binary(&o_name);
-
-        let mut file = File::create(out_name).unwrap();
-        isbfc::elf64_write(&mut file, &bin, bss_size).unwrap();
-        let mut permissions = file.metadata().unwrap().permissions();
-        permissions.set_mode(permissions.mode() | 0o111);
-        file.set_permissions(permissions).unwrap();
-    } else {
-        Command::new("ld")
-            .arg("-o")
-            .arg(out_name)
-            .arg(o_name)
-            .spawn()
-            .unwrap();
+    let code = link(&o_name, out_name, minimal).unwrap();
+    if code != Some(0) {
+        process::exit(1);
     }
 }
