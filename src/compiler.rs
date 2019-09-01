@@ -34,13 +34,13 @@ fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
         match *token {
             Add(offset, value) => {
                 let dest = offset_to_operand(offset);
-                if value == 1 && dest == "%r12" {
-                    push_asm!(state, "inc %r12");
-                } else if value >= 1 {
+                if value == 1 {
+                    push_asm!(state, "incq {}", dest);
+                } else if value == -1 {
+                    push_asm!(state, "decq {}", dest);
+                } else if value > 1 {
                     push_asm!(state, "addq ${}, {}", value, dest);
-                } else if value == -1 && dest == "%r12" {
-                    push_asm!(state, "dec %r12");
-                } else if value <= -1 {
+                } else if value < -1 {
                     push_asm!(state, "subq ${}, {}", -value, dest);
                 }
             }
