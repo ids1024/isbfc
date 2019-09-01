@@ -117,13 +117,11 @@ fn main() {
     }
 }
 
-fn object_to_binary(o_name: &str) -> (Vec<u8>, u64) {
-    let mut o_file = File::open(o_name).unwrap();
-    let text = isbfc::elf64_get_section(&mut o_file, b".text")
-        .unwrap()
+fn object_to_binary(o_name: &str) -> io::Result<(Vec<u8>, u64)> {
+    let mut o_file = File::open(o_name)?;
+    let text = isbfc::elf64_get_section(&mut o_file, b".text")?
         .unwrap();
-    let bss = isbfc::elf64_get_section(&mut o_file, b".bss")
-        .unwrap()
+    let bss = isbfc::elf64_get_section(&mut o_file, b".bss")?
         .unwrap();
     let bss_offset = (text.sh_size + 0x1000 - 1) & !(0x1000 - 1);
     let bss_size = bss.sh_size;
@@ -138,11 +136,10 @@ fn object_to_binary(o_name: &str) -> (Vec<u8>, u64) {
         .arg("-o")
         .arg("/dev/stdout")
         .arg(o_name)
-        .output()
-        .unwrap()
+        .output()?
         .stdout;
 
-    (bin, bss_size)
+    Ok((bin, bss_size))
 }
 
 fn assemble(code: &str, out_name: &str, debug: bool) -> io::Result<Option<i32>> {
@@ -168,7 +165,7 @@ fn assemble(code: &str, out_name: &str, debug: bool) -> io::Result<Option<i32>> 
 
 fn link(o_name: &str, out_name: &str, minimal: bool) -> io::Result<Option<i32>> {
     if minimal {
-        let (bin, bss_size) = object_to_binary(&o_name);
+        let (bin, bss_size) = object_to_binary(&o_name)?;
 
         let mut file = File::create(out_name)?;
         isbfc::elf64_write(&mut file, &bin, bss_size)?;
