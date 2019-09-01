@@ -123,8 +123,6 @@ fn object_to_binary(o_name: &str) -> (Vec<u8>, u64) {
     let bss_offset = (text.sh_size + 0x1000 - 1) & !(0x1000 - 1);
     let bss_size = bss.sh_size;
 
-    println!("{} - {}", bss_offset, bss_size);
-
     let bin = Command::new("ld")
         .arg("--oformat")
         .arg("binary")
