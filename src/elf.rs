@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 
-use std::io::{self, Read, Seek, SeekFrom};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem::transmute;
 
 use static_assertions::assert_eq_size;
@@ -88,7 +88,8 @@ pub struct Elf64_Shdr {
     pub sh_entsize: Elf64_Xword,
 }
 
-pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
+pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result<()> {
+    let size = text.len() as u64;
     let hdr_size = (EHDR_SIZE + 2 * PHDR_SIZE) as u64;
     let hdr_size_padded = (hdr_size + 0x1000 - 1) & !(0x1000 - 1);
 
@@ -135,16 +136,16 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
         p_align: 0x1000,
     };
 
-    let mut vec = Vec::new();
     unsafe {
-        vec.extend_from_slice(&transmute::<_, [u8; EHDR_SIZE]>(ehdr));
-        vec.extend_from_slice(&transmute::<_, [u8; PHDR_SIZE]>(phdr_text));
-        vec.extend_from_slice(&transmute::<_, [u8; PHDR_SIZE]>(phdr_bss));
+        f.write(&transmute::<_, [u8; EHDR_SIZE]>(ehdr))?;
+        f.write(&transmute::<_, [u8; PHDR_SIZE]>(phdr_text))?;
+        f.write(&transmute::<_, [u8; PHDR_SIZE]>(phdr_bss))?;
     }
     for _ in 0..(hdr_size_padded - hdr_size) {
-        vec.push(0);
+        f.write(b"0")?;
     }
-    vec
+    f.write(text)?;
+    Ok(())
 }
 
 fn elf64_read_strtab(f: &mut (impl Read + Seek), ehdr: &Elf64_Ehdr) -> io::Result<Vec<u8>> {

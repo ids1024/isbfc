@@ -174,11 +174,8 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bo
     if minimal {
         let (bin, bss_size) = object_to_binary(&o_name);
 
-        let hdr = isbfc::create_elf64_hdr(bin.len() as u64, bss_size);
-
         let mut file = File::create(out_name).unwrap();
-        file.write(&hdr).unwrap();
-        file.write(&bin).unwrap();
+        isbfc::elf64_write(&mut file, &bin, bss_size).unwrap();
         let mut permissions = file.metadata().unwrap().permissions();
         permissions.set_mode(permissions.mode() | 0o111);
         file.set_permissions(permissions).unwrap();
