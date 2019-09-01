@@ -89,6 +89,9 @@ pub struct Elf64_Shdr {
 }
 
 pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
+    let hdr_size = (EHDR_SIZE + 2 * PHDR_SIZE) as u64;
+    let hdr_size_padded = (hdr_size + 0x1000 - 1) & !(0x1000 - 1);
+
     let ehdr = Elf64_Ehdr {
         e_ident: [0x7f, b'E', b'L', b'F', 2, 1, 1, ELFOSABI_LINUX, 0, 0, 0, 0, 0, 0, 0, 0 ],
         e_type: ET_EXEC,
@@ -111,7 +114,7 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
     let phdr_text = Elf64_Phdr {
         p_type: PT_LOAD,
         p_flags: PF_R | PF_X,
-        p_offset: 0,
+        p_offset: hdr_size_padded,
         p_vaddr: 0x401000,
         p_paddr: 0x401000,
         p_filesz: size,
@@ -121,12 +124,10 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
 
     let bss_offset = (size + 0x1000 - 1) & !(0x1000 - 1);
 
-    println!("{:x} - {:x}", bss_offset, bss_size);
-
     let phdr_bss = Elf64_Phdr {
         p_type: PT_LOAD,
         p_flags: PF_R | PF_W,
-        p_offset: bss_offset,
+        p_offset: hdr_size_padded + bss_offset,
         p_vaddr: 0x401000 + bss_offset,
         p_paddr: 0x401000 + bss_offset,
         p_filesz: 0,
@@ -139,6 +140,9 @@ pub fn create_elf64_hdr(size: u64, bss_size: u64) -> Vec<u8> {
         vec.extend_from_slice(&transmute::<_, [u8; EHDR_SIZE]>(ehdr));
         vec.extend_from_slice(&transmute::<_, [u8; PHDR_SIZE]>(phdr_text));
         vec.extend_from_slice(&transmute::<_, [u8; PHDR_SIZE]>(phdr_bss));
+    }
+    for _ in 0..(hdr_size_padded - hdr_size) {
+        vec.push(0);
     }
     vec
 }
