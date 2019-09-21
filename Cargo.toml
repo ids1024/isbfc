@@ -6,14 +6,7 @@ description = "Brainfuck compiler for x86_64"
 repository = "https://github.com/ids1024/isbfc"
 license = "MIT"
 edition = "2018"
-
-[[bin]]
-doc = false
-name = "isbfc"
-
-[[bin]]
-name = "bfinterp"
-path = "src/bin/bfinterp.rs"
+default-run = "isbfc"
 
 [dependencies]
 clap = "2.33"
