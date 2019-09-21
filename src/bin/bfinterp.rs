@@ -9,7 +9,7 @@ use std::io;
 use std::io::prelude::*;
 
 extern crate isbfc;
-use isbfc::Token;
+use isbfc::{Token, IsbfcIR};
 use isbfc::Token::*;
 
 const BUFSIZE: usize = 8192;
@@ -67,7 +67,7 @@ fn main() {
     let mut code = Vec::new();
     file.read_to_end(&mut code).unwrap();
 
-    let tokens = isbfc::parse(&code).unwrap().optimize().tokens;
+    let tokens = IsbfcIR::from_ast(isbfc::parse(&code).unwrap()).optimize().tokens;
 
     let mut mem: [i32; BUFSIZE] = [0; BUFSIZE];
     let mut cur = BUFSIZE / 2;

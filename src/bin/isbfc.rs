@@ -80,13 +80,14 @@ fn main() {
     let mut code = Vec::new();
     file.read_to_end(&mut code).unwrap();
 
-    let mut ir = match isbfc::parse(&code) {
+    let ast = match isbfc::parse(&code) {
         Ok(ir) => ir,
         Err(err) => {
             println!("Parsing error: {}", err);
             process::exit(1);
         }
     };
+    let mut ir = isbfc::IsbfcIR::from_ast(ast);
     if level > 0 {
         ir = ir.optimize();
     }

@@ -1,9 +1,17 @@
-use crate::token::Token;
-use crate::token::Token::*;
-use crate::IsbfcIR;
 use std::error::Error;
 use std::fmt;
 use unicode_width::UnicodeWidthStr;
+
+#[derive(Clone)]
+pub enum AST {
+    Output,
+    Input,
+    Loop(Vec<AST>),
+    Right,
+    Left,
+    Inc,
+    Dec,
+}
 
 #[derive(Debug)]
 pub enum ParseErrorType {
@@ -60,14 +68,13 @@ impl fmt::Display for ParseError {
 
 impl Error for ParseError {}
 
-/// Parses a string of brainfuck code to isbfc's intermediate representation,
-/// without applying any optimization
-pub fn parse(code: &[u8]) -> Result<IsbfcIR, ParseError> {
+/// Parses a string of brainfuck code to unoptimized AST
+pub fn parse(code: &[u8]) -> Result<Vec<AST>, ParseError> {
     let mut i = 0;
-    _parse(code, &mut i, 0).map(|x| IsbfcIR { tokens: x })
+    _parse(code, &mut i, 0)
 }
 
-fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseError> {
+fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<AST>, ParseError> {
     // Starting [ of the loop
     let start = i.saturating_sub(1);
 
@@ -76,11 +83,11 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseErr
         *i += 1;
 
         match c {
-            b'+' => tokens.push(Add(0, 1)),
-            b'-' => tokens.push(Add(0, -1)),
-            b'>' => tokens.push(Move(1)),
-            b'<' => tokens.push(Move(-1)),
-            b'[' => tokens.push(Loop(_parse(code, i, level + 1)?)),
+            b'+' => tokens.push(AST::Inc),
+            b'-' => tokens.push(AST::Dec),
+            b'>' => tokens.push(AST::Right),
+            b'<' => tokens.push(AST::Left),
+            b'[' => tokens.push(AST::Loop(_parse(code, i, level + 1)?)),
             b']' => {
                 return if level == 0 {
                     Err(ParseError::new(ExtraCloseLoop, code, *i - 1))
@@ -88,11 +95,8 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<Token>, ParseErr
                     Ok(tokens)
                 };
             }
-            b',' => tokens.push(Input),
-            b'.' => {
-                tokens.push(LoadOut(0, 0));
-                tokens.push(Output);
-            }
+            b',' => tokens.push(AST::Input),
+            b'.' => tokens.push(AST::Output),
             _ => (),
         };
     }
