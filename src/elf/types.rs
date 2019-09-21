@@ -18,7 +18,7 @@ pub const ET_EXEC: u16 = 2;
 pub const EM_X86_64: u16 = 62;
 pub const PT_LOAD: u32 = 1;
 
-pub const PF_X: u32 = 1 << 0;
+pub const PF_X: u32 = 1;
 pub const PF_W: u32 = 1 << 1;
 pub const PF_R: u32 = 1 << 2;
 

@@ -18,7 +18,7 @@ fn interp_iter(
     mem: &mut [i32; BUFSIZE],
     cur: &mut usize,
     outbuff: &mut String,
-    tokens: &Vec<Token>,
+    tokens: &[Token],
 ) {
     for token in tokens {
         match *token {
@@ -45,15 +45,15 @@ fn interp_iter(
             }
             Input => {
                 let mut buffer = [0; 1];
-                io::stdin().take(1).read(&mut buffer).unwrap();
-                mem[*cur] = buffer[0] as i32;
+                io::stdin().take(1).read_exact(&mut buffer).unwrap();
+                mem[*cur] = i32::from(buffer[0]);
             }
             LoadOut(offset, add) => {
                 outbuff.push((mem[(*cur as i32 + offset) as usize] + add) as u8 as char)
             }
             LoadOutSet(value) => outbuff.push(value as u8 as char),
             Output => {
-                io::stdout().write(outbuff.as_bytes()).unwrap();
+                io::stdout().write_all(outbuff.as_bytes()).unwrap();
                 io::stdout().flush().unwrap();
                 outbuff.clear();
             }

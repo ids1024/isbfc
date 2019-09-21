@@ -39,19 +39,19 @@ impl fmt::Display for ParseError {
 
         match self.err {
             UnclosedLoop => {
-                write!(f, "reached EOF with unterminated loop\n")?;
-                write!(f, "Loop started at {}:{}\n", self.linenum, self.offset)?;
+                writeln!(f, "reached EOF with unterminated loop")?;
+                writeln!(f, "Loop started at {}:{}", self.linenum, self.offset)?;
             }
             ExtraCloseLoop => {
-                write!(
+                writeln!(
                     f,
-                    "[ found at {}:{} when not in a loop\n",
+                    "[ found at {}:{} when not in a loop",
                     self.linenum, self.offset
                 )?;
             }
         };
 
-        write!(f, "{}\n", line)?;
+        writeln!(f, "{}", line)?;
         write!(f, "{}^", " ".repeat(width))?;
 
         Ok(())

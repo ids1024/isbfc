@@ -34,7 +34,7 @@ impl OptimizeState {
         if let Some(set) = self.sets.get_mut(&offset) {
             *set += value;
         } else {
-            value = self.adds.get(&offset).unwrap_or(&0) + value;
+            value += self.adds.get(&offset).unwrap_or(&0);
             if value != 0 {
                 self.adds.insert(offset, value);
             } else {

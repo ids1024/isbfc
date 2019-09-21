@@ -33,7 +33,7 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
         e_type: ET_EXEC,
         e_machine: EM_X86_64,
         e_version: 1,
-        e_entry: 0x401000,
+        e_entry: 0x40_1000,
         // Put program header immediately after ELF header
         e_phoff: EHDR_SIZE as u64,
         // Don't include a section header table
@@ -51,8 +51,8 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
         p_type: PT_LOAD,
         p_flags: PF_R | PF_X,
         p_offset: hdr_size_padded,
-        p_vaddr: 0x401000,
-        p_paddr: 0x401000,
+        p_vaddr: 0x40_1000,
+        p_paddr: 0x40_1000,
         p_filesz: size,
         p_memsz: size,
         p_align: 0x1000,
@@ -64,22 +64,22 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
         p_type: PT_LOAD,
         p_flags: PF_R | PF_W,
         p_offset: hdr_size_padded + bss_offset,
-        p_vaddr: 0x401000 + bss_offset,
-        p_paddr: 0x401000 + bss_offset,
+        p_vaddr: 0x40_1000 + bss_offset,
+        p_paddr: 0x40_1000 + bss_offset,
         p_filesz: 0,
         p_memsz: bss_size,
         p_align: 0x1000,
     };
 
     unsafe {
-        f.write(&transmute::<_, [u8; EHDR_SIZE]>(ehdr))?;
-        f.write(&transmute::<_, [u8; PHDR_SIZE]>(phdr_text))?;
-        f.write(&transmute::<_, [u8; PHDR_SIZE]>(phdr_bss))?;
+        f.write_all(&transmute::<_, [u8; EHDR_SIZE]>(ehdr))?;
+        f.write_all(&transmute::<_, [u8; PHDR_SIZE]>(phdr_text))?;
+        f.write_all(&transmute::<_, [u8; PHDR_SIZE]>(phdr_bss))?;
     }
     for _ in 0..(hdr_size_padded - hdr_size) {
-        f.write(b"0")?;
+        f.write_all(b"0")?;
     }
-    f.write(text)?;
+    f.write_all(text)?;
     Ok(())
 }
 
@@ -87,16 +87,15 @@ fn elf64_read_strtab(f: &mut (impl Read + Seek), ehdr: &Elf64_Ehdr) -> io::Resul
     // Read section header for the string table
     let mut shdr_buf = [0; SHDR_SIZE];
     f.seek(SeekFrom::Start(
-        ehdr.e_shoff + ehdr.e_shstrndx as u64 * SHDR_SIZE as u64,
+        ehdr.e_shoff + u64::from(ehdr.e_shstrndx) * SHDR_SIZE as u64,
     ))?;
-    f.read(&mut shdr_buf)?;
+    f.read_exact(&mut shdr_buf)?;
     let shdr: Elf64_Shdr = unsafe { transmute(shdr_buf) };
 
     // Read string table section
-    let mut strtab = Vec::with_capacity(shdr.sh_size as usize);
-    strtab.resize(shdr.sh_size as usize, 0);
+    let mut strtab = vec![0; shdr.sh_size as usize];
     f.seek(SeekFrom::Start(shdr.sh_offset))?;
-    f.read(&mut strtab)?;
+    f.read_exact(&mut strtab)?;
 
     Ok(strtab)
 }
@@ -107,7 +106,7 @@ pub fn elf64_get_section(
 ) -> io::Result<Option<Elf64_Shdr>> {
     let mut ehdr_buf = [0; EHDR_SIZE];
     f.seek(SeekFrom::Start(0))?;
-    f.read(&mut ehdr_buf)?;
+    f.read_exact(&mut ehdr_buf)?;
     let ehdr: Elf64_Ehdr = unsafe { transmute(ehdr_buf) };
 
     let strtab = elf64_read_strtab(f, &ehdr)?;
@@ -115,7 +114,7 @@ pub fn elf64_get_section(
     f.seek(SeekFrom::Start(ehdr.e_shoff))?;
     for _ in 0..ehdr.e_shnum {
         let mut shdr_buf = [0; SHDR_SIZE];
-        f.read(&mut shdr_buf)?;
+        f.read_exact(&mut shdr_buf)?;
         let shdr: Elf64_Shdr = unsafe { transmute(shdr_buf) };
 
         let mut cur_name = &strtab[shdr.sh_name as usize..];

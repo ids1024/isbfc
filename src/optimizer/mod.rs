@@ -7,7 +7,7 @@ use crate::token::Token;
 use crate::token::Token::*;
 use crate::IsbfcIR;
 
-fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
+fn _optimize(tokens: &[Token]) -> OptimizeState {
     let mut do_output = false;
     let mut state = OptimizeState::default();
 
@@ -94,7 +94,7 @@ fn _optimize(tokens: &Vec<Token>) -> OptimizeState {
     state
 }
 
-fn _optimize_loop(tokens: &Vec<Token>, outer: &mut OptimizeState) {
+fn _optimize_loop(tokens: &[Token], outer: &mut OptimizeState) {
     let mut inner = _optimize(tokens);
 
     if inner.shift != 0 && inner.sets.is_empty() && inner.adds.is_empty() && inner.tokens.is_empty()

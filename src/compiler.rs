@@ -26,7 +26,7 @@ fn offset_to_operand(offset: i32) -> String {
     }
 }
 
-fn compile_iter(state: &mut CompileState, tokens: &Vec<Token>) {
+fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
     state.level += 1;
 
     let mut outbuffpos = 0;
