@@ -1,7 +1,8 @@
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem::transmute;
 
-use crate::elf_types::*;
+mod types;
+use types::*;
 
 // Minimal ELF support, sufficient for a very simple 64-bit static Linux
 // executable.

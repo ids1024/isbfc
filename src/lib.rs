@@ -17,7 +17,6 @@ use std::fmt;
 mod macros;
 mod compiler;
 mod elf;
-mod elf_types;
 mod optimizer;
 mod parser;
 mod token;
