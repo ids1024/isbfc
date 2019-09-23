@@ -158,11 +158,11 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
                 state.loopnum += 1;
                 let startlabel = format!("loop{}", state.loopnum);
                 let endlabel = format!("endloop{}", state.loopnum);
-                state.lir.push(label(startlabel.clone()));
                 state.lir.push(jp(endlabel.clone()));
-                state.lir.push(add(Tape(0), Tape(0), Immediate(offset)));
-                state.lir.push(jnz(Tape(0), startlabel.clone()));
+                state.lir.push(label(startlabel.clone()));
+                state.lir.push(shift(offset));
                 state.lir.push(label(endlabel.clone()));
+                state.lir.push(jnz(Tape(0), startlabel.clone()));
             }
             // XXX
             Token::Input => state.lir.push(input("strbuf".to_string(), 0, outbuffpos)),
