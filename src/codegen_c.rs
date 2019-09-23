@@ -24,7 +24,7 @@ impl CellType {
 
 fn lval_to_c(val: &LVal, cell: CellType) -> String {
     match val {
-        LVal::Reg(reg) => format!("{} r{}", cell.c_name(), reg),
+        LVal::Reg(reg) => format!("const {} r{}", cell.c_name(), reg),
         LVal::Tape(offset) => format!("tape[cursor + {}]", offset),
         LVal::Buf(buf, offset) => format!("{}[{}]", buf, offset),
     }
