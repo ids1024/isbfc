@@ -99,6 +99,16 @@ struct CompileState {
     loopnum: i32,
     ifnum: i32,
     outbuffsize: usize,
+    regnum: u32,
+}
+
+impl CompileState {
+    /// Allocate a new, unique register (for SSA output)
+    fn reg(&mut self) -> u32 {
+        let r = self.regnum;
+        self.regnum += 1;
+        r
+    }
 }
 
 fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
@@ -110,8 +120,9 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
             Token::Add(offset, value) => state.lir.push(add(Tape(offset), Tape(offset), Immediate(value))),
             Token::MulCopy(src_idx, dest_idx, mult) => {
                 // XXX ?
-                state.lir.push(mul(Reg(1), Tape(src_idx), Immediate(mult)));
-                state.lir.push(add(Tape(dest_idx), Tape(dest_idx), Reg(1)));
+                let reg = state.reg();
+                state.lir.push(mul(Reg(reg), Tape(src_idx), Immediate(mult)));
+                state.lir.push(add(Tape(dest_idx), Tape(dest_idx), Reg(reg)));
             }
             Token::Set(offset, value) => state.lir.push(mov(Tape(offset), Immediate(value))),
             Token::Move(offset) => state.lir.push(shift(offset)),
@@ -150,8 +161,9 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
             // XXX
             Token::Input => state.lir.push(input("strbuf".to_string(), 0, outbuffpos)),
             Token::LoadOut(offset, addend) => {
-                state.lir.push(add(Reg(1), Tape(offset), Immediate(addend)));
-                state.lir.push(mov(Buf("strbuf".to_string(), outbuffpos), Reg(1)));
+                let reg = state.reg();
+                state.lir.push(add(Reg(reg), Tape(offset), Immediate(addend)));
+                state.lir.push(mov(Buf("strbuf".to_string(), outbuffpos), Reg(reg)));
                 outbuffpos += 1;
             }
             Token::LoadOutSet(value) => {
