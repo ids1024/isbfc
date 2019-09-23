@@ -53,8 +53,8 @@ pub enum LIR {
     Mov(LVal, RVal),
     Label(String),
     Jp(String),
-    Jz(LVal, String),
-    Jnz(LVal, String),
+    Jz(RVal, String),
+    Jnz(RVal, String),
     DeclareBssBuf(String, usize),
     Input(String, usize, usize),
     Output(String, usize, usize),
@@ -70,8 +70,6 @@ pub mod lir {
     pub use LIR::Shift as shift;
     pub use LIR::Label as label;
     pub use LIR::Jp as jp;
-    pub use LIR::Jz as jz;
-    pub use LIR::Jnz as jnz;
     pub use LIR::DeclareBssBuf as declare_bss_buf;
     pub use LIR::Input as input;
     pub use LIR::Output as output;
@@ -90,6 +88,14 @@ pub mod lir {
 
     pub fn mov(dest: LVal, src: impl Into<RVal>) -> LIR {
         LIR::Mov(dest, src.into())
+    }
+
+    pub fn jz(comparand: impl Into<RVal>, name: String) -> LIR {
+        LIR::Jz(comparand.into(), name)
+    }
+
+    pub fn jnz(comparand: impl Into<RVal>, name: String) -> LIR {
+        LIR::Jnz(comparand.into(), name)
     }
 }
 
