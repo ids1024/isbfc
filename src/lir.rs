@@ -125,7 +125,6 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
         match *token {
             Token::Add(offset, value) => state.lir.push(add(Tape(offset), Tape(offset), Immediate(value))),
             Token::MulCopy(src_idx, dest_idx, mult) => {
-                // XXX ?
                 let reg = state.reg();
                 state.lir.push(mul(Reg(reg), Tape(src_idx), Immediate(mult)));
                 state.lir.push(add(Tape(dest_idx), Tape(dest_idx), Reg(reg)));
