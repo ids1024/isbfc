@@ -44,7 +44,7 @@ pub fn codegen(lir: &[LIR]) -> String {
             Jz(comparand, label) => push_asm!("if ({} == 0) {{ goto {}; }}", rval_to_c(comparand), label),
             Jnz(comparand, label) => push_asm!("if ({} != 0) {{ goto {}; }}", rval_to_c(comparand), label),
             DeclareBssBuf(buffer, len) => { bss_bufs.insert(buffer, len); },
-            Input(buffer, offset, len) => {}, // XXX
+            Input(buffer, offset, len) => push_asm!("fread({}+{}, 1, {}, stdin);", buffer, offset, len),
             Output(buffer, offset, len) => push_asm!("fwrite({}+{}, 1, {}, stdout);", buffer, offset, len),
         }
     }

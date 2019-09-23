@@ -164,7 +164,10 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
                 state.lir.push(jnz(Tape(0), startlabel.clone()));
             }
             // XXX
-            Token::Input => state.lir.push(input("strbuf".to_string(), 0, outbuffpos)),
+            Token::Input => {
+                state.lir.push(input("inputbuf".to_string(), 0, 1));
+                state.lir.push(mov(Tape(0), Buf("inputbuf".to_string(), 0)));
+            }
             Token::LoadOut(offset, addend) => {
                 let reg = state.reg();
                 state.lir.push(add(Reg(reg), Tape(offset), Immediate(addend)));
@@ -190,5 +193,6 @@ pub fn compile(tokens: &[Token]) -> Vec<LIR> {
     let mut state = CompileState::default();
     compile_iter(&mut state, tokens);
     state.lir.push(lir::declare_bss_buf("strbuf".to_string(), state.outbuffsize));
+    state.lir.push(lir::declare_bss_buf("inputbuf".to_string(), 1));
     state.lir
 }
