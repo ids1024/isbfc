@@ -2,10 +2,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::process;
 
-extern crate clap;
 use clap::{App, Arg, ArgGroup};
-
-extern crate isbfc;
 
 fn main() {
     let matches = App::new("isbfc")
