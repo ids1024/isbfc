@@ -39,7 +39,7 @@ fn rval_to_c(val: &RVal) -> String {
     }
 }
 
-pub fn codegen(lir: &[LIR], cell: CellType) -> String {
+pub fn codegen(lir: &[LIR], cell: CellType, tape_size: i32) -> String {
     let mut output = String::new();
 
     macro_rules! push_asm {
@@ -76,10 +76,10 @@ pub fn codegen(lir: &[LIR], cell: CellType) -> String {
     return format!(concat!(
         "#include <stdint.h>\n",
         "#include <stdio.h>\n",
-        "{} tape[8192];\n",
-        "size_t cursor = 4096;\n",
+        "{} tape[{}];\n",
+        "size_t cursor = {};\n",
         "{}\n",
         "int main() {{\n",
         "{}\n",
-        "}}\n"), cell.c_name(), bss, output)
+        "}}\n"), cell.c_name(), tape_size, tape_size / 2, bss, output)
 }
