@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::process::{self, Command, Stdio};
 
-use clap::{App, Arg, ArgGroup};
+use clap::{App, Arg};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
 
@@ -16,12 +16,15 @@ fn main() {
                 .short("S")
                 .help("Assemble but do not link"),
         )
+        // TODO: Implement new dumping for various IR levels
+        /*
         .arg(
             Arg::with_name("dump_ir")
                 .long("dumpir")
                 .help("Dump intermediate representation; for debugging"),
         )
         .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir"]))
+        */
         .arg(
             Arg::with_name("debugging_symbols")
                 .short("g")
@@ -80,17 +83,16 @@ fn main() {
     file.read_to_end(&mut code).unwrap();
 
     let ast = match isbfc::parse(&code) {
-        Ok(ir) => ir,
+        Ok(ast) => ast,
         Err(err) => {
             println!("Parsing error: {}", err);
             process::exit(1);
         }
     };
-    let mut ir = isbfc::IsbfcIR::from_ast(ast);
-    if level > 0 {
-        ir = ir.optimize();
-    }
 
+    let lir = isbfc::optimizer::old::optimize(&ast, level);
+
+    /*
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
@@ -98,16 +100,17 @@ fn main() {
         } else {
             println!("{:#?}", ir);
         }
-    } else if matches.is_present("output_asm") {
+    */
+    if matches.is_present("output_asm") {
         println!("Compiling...");
-        let output = compile(ir, tape_size);
+        let output = compile(lir, tape_size);
         let def_name = format!("{}.s", name);
         let out_name = matches.value_of("out_name").unwrap_or(&def_name);
         let mut asmfile = File::create(out_name).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
         println!("Compiling...");
-        let output = compile(ir, tape_size);
+        let output = compile(lir, tape_size);
         let out_name = matches.value_of("out_name").unwrap_or(name);
         let debug = matches.is_present("debugging_symbols");
         let minimal = matches.is_present("minimal_elf");
@@ -115,10 +118,9 @@ fn main() {
     }
 }
 
-pub fn compile(ir: isbfc::IsbfcIR, tape_size: i32) -> String {
+pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> String {
     // TODO: avoid unwrap
 
-    let lir = isbfc::lir::compile(&ir.tokens);
     let c = codegen(&lir, CellType::U64, tape_size);
 
     let mut child = Command::new("gcc")

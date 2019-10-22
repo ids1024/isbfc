@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::AST;
+
 /// A Token in isbfc's intermediate representation.
 #[derive(Clone, PartialEq, Eq)]
 pub enum Token {
@@ -59,4 +61,23 @@ impl fmt::Debug for Token {
             }
         }
     }
+}
+
+pub fn ast_to_tokens(ast: &[AST]) -> Vec<Token> {
+    let mut tokens = Vec::new();
+    for i in ast {
+        match i {
+            AST::Output => {
+                tokens.push(Token::LoadOut(0, 0));
+                tokens.push(Token::Output);
+            },
+            AST::Input => tokens.push(Token::Input),
+            AST::Loop(inner) => tokens.push(Token::Loop(ast_to_tokens(inner))),
+            AST::Right => tokens.push(Token::Move(1)),
+            AST::Left => tokens.push(Token::Move(-1)),
+            AST::Inc => tokens.push(Token::Add(0, 1)),
+            AST::Dec => tokens.push(Token::Add(0, -1)),
+        }
+    }
+    tokens
 }
