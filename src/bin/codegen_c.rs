@@ -1,7 +1,7 @@
 extern crate isbfc;
 
 use std::io::{Read, Write};
-use isbfc::codegen_c::CellType;
+use isbfc::codegen::c_codegen::{codegen, CellType};
 
 fn main() {
     let mut code = Vec::new();
@@ -11,7 +11,7 @@ fn main() {
     let mut ir = isbfc::IsbfcIR::from_ast(ast);
     ir = ir.optimize();
     let lir = isbfc::lir::compile(&ir.tokens);
-    let c = isbfc::codegen_c::codegen(&lir, CellType::U64);
+    let c = codegen(&lir, CellType::U64);
 
     std::io::stdout().write_all(c.as_bytes()).unwrap();
 }

@@ -22,7 +22,7 @@ mod parser;
 mod token;
 mod assembly;
 pub mod lir;
-pub mod codegen_c;
+pub mod codegen;
 
 pub use crate::elf::{elf64_get_section, elf64_write};
 pub use crate::parser::{parse, AST};
