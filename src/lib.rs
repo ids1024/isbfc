@@ -13,7 +13,6 @@
 
 #[macro_use]
 mod macros;
-mod compiler;
 mod elf;
 mod optimizer;
 mod parser;

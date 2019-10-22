@@ -1,8 +1,10 @@
 use std::fs::File;
 use std::io::{Read, Write};
-use std::process;
+use std::process::{self, Command, Stdio};
 
 use clap::{App, Arg, ArgGroup};
+
+use isbfc::codegen::c_codegen::{codegen, CellType};
 
 fn main() {
     let matches = App::new("isbfc")
@@ -98,19 +100,52 @@ fn main() {
         }
     } else if matches.is_present("output_asm") {
         println!("Compiling...");
-        let output = ir.compile(tape_size);
+        let output = compile(ir, tape_size);
         let def_name = format!("{}.s", name);
         let out_name = matches.value_of("out_name").unwrap_or(&def_name);
         let mut asmfile = File::create(out_name).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
         println!("Compiling...");
-        let output = ir.compile(tape_size);
+        let output = compile(ir, tape_size);
         let out_name = matches.value_of("out_name").unwrap_or(name);
         let debug = matches.is_present("debugging_symbols");
         let minimal = matches.is_present("minimal_elf");
         asm_and_link(&output, &name, &out_name, debug, minimal);
     }
+}
+
+pub fn compile(ir: isbfc::IsbfcIR, tape_size: i32) -> String {
+    // TODO: avoid unwrap
+
+    let lir = isbfc::lir::compile(&ir.tokens);
+    let c = codegen(&lir, CellType::U64, tape_size);
+
+    let mut child = Command::new("gcc")
+        .arg("-x")
+        .arg("c")
+        .arg("-S")
+        .arg("-o")
+        .arg("-") // Standard output
+        .arg("-") // Standard input
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn().unwrap();
+
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(c.as_bytes()).unwrap();
+
+    let mut code = String::new();
+    child.stdout.take().unwrap().read_to_string(&mut code).unwrap();
+
+    if !child.wait().unwrap().success() {
+        process::exit(1);
+    }
+
+    code
 }
 
 fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {

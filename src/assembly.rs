@@ -63,7 +63,8 @@ pub fn link(o_name: &str, out_name: &str, minimal: bool) -> io::Result<Option<i3
         file.set_permissions(permissions)?;
         Ok(Some(0))
     } else {
-        Ok(Command::new("ld")
+        // TODO switch back to ld when we no longer need startup code for C
+        Ok(Command::new("gcc")
             .arg("-o")
             .arg(out_name)
             .arg("/dev/stdin")
