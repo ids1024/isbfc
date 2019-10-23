@@ -5,6 +5,7 @@ use std::process::{self, Command, Stdio};
 use clap::{App, Arg};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
+use isbfc::{Optimizer, OldOptimizer};
 
 fn main() {
     let matches = App::new("isbfc")
@@ -90,7 +91,7 @@ fn main() {
         }
     };
 
-    let lir = isbfc::optimizer::old::optimize(&ast, level);
+    let lir = OldOptimizer::optimize(&ast, level);
 
     /*
     if matches.is_present("dump_ir") {
