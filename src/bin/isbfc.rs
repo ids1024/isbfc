@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::process::{self, Command, Stdio};
 
-use clap::{App, Arg};
+use clap::{App, Arg, ArgGroup};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
 use isbfc::{Optimizer, OldOptimizer};
@@ -17,15 +17,12 @@ fn main() {
                 .short("S")
                 .help("Assemble but do not link"),
         )
-        // TODO: Implement new dumping for various IR levels
-        /*
         .arg(
             Arg::with_name("dump_ir")
                 .long("dumpir")
                 .help("Dump intermediate representation; for debugging"),
         )
         .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir"]))
-        */
         .arg(
             Arg::with_name("debugging_symbols")
                 .short("g")
@@ -93,16 +90,14 @@ fn main() {
 
     let lir = OldOptimizer::optimize(&ast, level);
 
-    /*
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
-            writeln!(irfile, "{:#?}", ir).unwrap();
+            OldOptimizer::dumpir(&ast, level, &mut irfile).unwrap();
         } else {
-            println!("{:#?}", ir);
-        }
-    */
-    if matches.is_present("output_asm") {
+            OldOptimizer::dumpir(&ast, level, &mut std::io::stdout()).unwrap();
+        };
+    } else if matches.is_present("output_asm") {
         println!("Compiling...");
         let output = compile(lir, tape_size);
         let def_name = format!("{}.s", name);
