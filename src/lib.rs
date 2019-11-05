@@ -11,8 +11,6 @@
 //! }
 //! ```
 
-#[macro_use]
-mod macros;
 mod elf;
 mod parser;
 mod assembly;
