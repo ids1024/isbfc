@@ -1,11 +1,11 @@
-use std::io::Write;
-use crate::{AST, LIR};
 use super::Optimizer;
+use crate::{AST, LIR};
+use std::io::Write;
 
-mod token;
+mod compile;
 mod optimize;
 mod optimize_state;
-mod compile;
+mod token;
 
 pub struct OldOptimizer;
 

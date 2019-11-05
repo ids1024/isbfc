@@ -1,6 +1,6 @@
-use std::fmt::Write;
+use crate::lir::{LVal, RVal, LIR};
 use std::collections::HashMap;
-use crate::lir::{LIR, LVal, RVal};
+use std::fmt::Write;
 use LIR::*;
 
 #[derive(Clone, Copy)]
@@ -53,18 +53,43 @@ pub fn codegen(lir: &[LIR], cell: CellType, tape_size: i32) -> String {
     for i in lir {
         match i {
             Shift(shift) => push_asm!("cursor += {};", shift),
-            Mul(dest, a, b) => push_asm!("{} = {} * {};", lval_to_c(dest, cell), rval_to_c(a), rval_to_c(b)),
-            Add(dest, a, b) => push_asm!("{} = {} + {};", lval_to_c(dest, cell), rval_to_c(a), rval_to_c(b)),
-            Sub(dest, a, b) => push_asm!("{} = {} - {};", lval_to_c(dest, cell), rval_to_c(a), rval_to_c(b)),
+            Mul(dest, a, b) => push_asm!(
+                "{} = {} * {};",
+                lval_to_c(dest, cell),
+                rval_to_c(a),
+                rval_to_c(b)
+            ),
+            Add(dest, a, b) => push_asm!(
+                "{} = {} + {};",
+                lval_to_c(dest, cell),
+                rval_to_c(a),
+                rval_to_c(b)
+            ),
+            Sub(dest, a, b) => push_asm!(
+                "{} = {} - {};",
+                lval_to_c(dest, cell),
+                rval_to_c(a),
+                rval_to_c(b)
+            ),
             Mov(dest, src) => push_asm!("{} = {};", lval_to_c(dest, cell), rval_to_c(src)),
             // https://stackoverflow.com/questions/18496282/why-do-i-get-a-label-can-only-be-part-of-a-statement-and-a-declaration-is-not-a
             Label(label) => push_asm!("{}: ;", label),
             Jp(label) => push_asm!("goto {};", label),
-            Jz(comparand, label) => push_asm!("if ({} == 0) {{ goto {}; }}", rval_to_c(comparand), label),
-            Jnz(comparand, label) => push_asm!("if ({} != 0) {{ goto {}; }}", rval_to_c(comparand), label),
-            DeclareBssBuf(buffer, len) => { bss_bufs.insert(buffer, len); },
-            Input(buffer, offset, len) => push_asm!("fread({}+{}, 1, {}, stdin);", buffer, offset, len),
-            Output(buffer, offset, len) => push_asm!("fwrite({}+{}, 1, {}, stdout);", buffer, offset, len),
+            Jz(comparand, label) => {
+                push_asm!("if ({} == 0) {{ goto {}; }}", rval_to_c(comparand), label)
+            }
+            Jnz(comparand, label) => {
+                push_asm!("if ({} != 0) {{ goto {}; }}", rval_to_c(comparand), label)
+            }
+            DeclareBssBuf(buffer, len) => {
+                bss_bufs.insert(buffer, len);
+            }
+            Input(buffer, offset, len) => {
+                push_asm!("fread({}+{}, 1, {}, stdin);", buffer, offset, len)
+            }
+            Output(buffer, offset, len) => {
+                push_asm!("fwrite({}+{}, 1, {}, stdout);", buffer, offset, len)
+            }
         }
     }
 
@@ -73,13 +98,21 @@ pub fn codegen(lir: &[LIR], cell: CellType, tape_size: i32) -> String {
         writeln!(bss, "char {}[{}];", name, len).unwrap();
     }
 
-    return format!(concat!(
-        "#include <stdint.h>\n",
-        "#include <stdio.h>\n",
-        "{} tape[{}];\n",
-        "size_t cursor = {};\n",
-        "{}\n",
-        "int main() {{\n",
-        "{}\n",
-        "}}\n"), cell.c_name(), tape_size, tape_size / 2, bss, output)
+    return format!(
+        concat!(
+            "#include <stdint.h>\n",
+            "#include <stdio.h>\n",
+            "{} tape[{}];\n",
+            "size_t cursor = {};\n",
+            "{}\n",
+            "int main() {{\n",
+            "{}\n",
+            "}}\n"
+        ),
+        cell.c_name(),
+        tape_size,
+        tape_size / 2,
+        bss,
+        output
+    );
 }

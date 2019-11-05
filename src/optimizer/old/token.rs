@@ -70,7 +70,7 @@ pub fn ast_to_tokens(ast: &[AST]) -> Vec<Token> {
             AST::Output => {
                 tokens.push(Token::LoadOut(0, 0));
                 tokens.push(Token::Output);
-            },
+            }
             AST::Input => tokens.push(Token::Input),
             AST::Loop(inner) => tokens.push(Token::Loop(ast_to_tokens(inner))),
             AST::Right => tokens.push(Token::Move(1)),

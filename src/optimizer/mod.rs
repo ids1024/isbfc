@@ -1,5 +1,5 @@
-use std::io::Write;
 use crate::{AST, LIR};
+use std::io::Write;
 
 mod old;
 mod simple;

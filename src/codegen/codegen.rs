@@ -1,8 +1,8 @@
 // XXX: WIP, not usable
 
-use std::fmt::{self, Write, Display, Formatter};
-use std::collections::HashMap;
 use crate::lir::LIR;
+use std::collections::HashMap;
+use std::fmt::{self, Display, Formatter, Write};
 
 #[repr(u8)]
 enum Reg {
@@ -21,7 +21,7 @@ enum Reg {
     R12,
     R13,
     R14,
-    R15
+    R15,
 }
 
 impl Display for Reg {
@@ -72,7 +72,7 @@ enum Instr {
     Mulq,
     Dec,
     Inc,
-    Label(String)
+    Label(String),
 }
 
 impl Display for Instr {
@@ -81,7 +81,7 @@ impl Display for Instr {
             Instr::Movq => Ok(()),
             Instr::Xor => Ok(()),
             Instr::Int(num) => write!(f, "int ${}", num),
-            Instr::Syscall => write!(f, "syscall") ,
+            Instr::Syscall => write!(f, "syscall"),
             Instr::Subb => Ok(()),
             Instr::Addb => Ok(()),
             Instr::Cmp => Ok(()),
@@ -119,8 +119,8 @@ fn lir_to_instrs(lir: &[LIR], bss_bufs: &mut HashMap<String, usize>) -> Vec<Inst
 
     for i in lir {
         match i {
-            Shift(shift) => {},
-            Mul(dest, a, b) => {},
+            Shift(shift) => {}
+            Mul(dest, a, b) => {}
             Add(dest, a, b) => {
                 // TODO
                 /*
@@ -129,22 +129,24 @@ fn lir_to_instrs(lir: &[LIR], bss_bufs: &mut HashMap<String, usize>) -> Vec<Inst
                 } else {
                 }
                 */
-            },
-            Sub(dest, a, b) => {},
-            Mov(dest, src) => {},
+            }
+            Sub(dest, a, b) => {}
+            Mov(dest, src) => {}
             Label(label) => instrs.push(Instr::Label(label.clone())),
             Jp(label) => instrs.push(Instr::Jmp(label.clone())),
             Jz(comparand, label) => {
                 // TODO test comparand
                 instrs.push(Instr::Jz(label.clone()))
-            },
+            }
             Jnz(comparand, label) => {
                 // TODO test comparand
                 instrs.push(Instr::Jnz(label.clone()))
-            },
-            DeclareBssBuf(buffer, len) => { bss_bufs.insert(buffer.clone(), *len); },
-            Input(buffer, offset, len) => {},
-            Output(buffer, offset, len) => {},
+            }
+            DeclareBssBuf(buffer, len) => {
+                bss_bufs.insert(buffer.clone(), *len);
+            }
+            Input(buffer, offset, len) => {}
+            Output(buffer, offset, len) => {}
         }
     }
 

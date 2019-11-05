@@ -1,15 +1,13 @@
 use std::fs::File;
 use std::io::{self, Write};
-use std::process::{Command, Stdio};
 use std::os::unix::fs::PermissionsExt;
+use std::process::{Command, Stdio};
 
 use crate::elf::{elf64_get_section, elf64_write};
 
 fn object_to_binary(mut o_file: File) -> io::Result<(Vec<u8>, u64)> {
-    let text = elf64_get_section(&mut o_file, b".text")?
-        .unwrap();
-    let bss = elf64_get_section(&mut o_file, b".bss")?
-        .unwrap();
+    let text = elf64_get_section(&mut o_file, b".text")?.unwrap();
+    let bss = elf64_get_section(&mut o_file, b".bss")?.unwrap();
     let bss_offset = (text.sh_size + 0x1000 - 1) & !(0x1000 - 1);
     let bss_size = bss.sh_size;
 
@@ -42,11 +40,7 @@ pub fn assemble(code: &str, out_name: &str, debug: bool) -> io::Result<Option<i3
         .stdin(Stdio::piped())
         .spawn()?;
 
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(code.as_bytes())?;
+    child.stdin.take().unwrap().write_all(code.as_bytes())?;
 
     Ok(child.wait()?.code())
 }

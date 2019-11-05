@@ -11,15 +11,15 @@
 //! }
 //! ```
 
-mod elf;
-mod parser;
 mod assembly;
-mod optimizer;
-pub mod lir;
 pub mod codegen;
+mod elf;
+pub mod lir;
+mod optimizer;
+mod parser;
 
-pub use crate::elf::{elf64_get_section, elf64_write};
-pub use crate::parser::{parse, AST};
-pub use crate::lir::{LIR, LIRBuilder};
 pub use crate::assembly::{assemble, link};
-pub use crate::optimizer::{Optimizer, OldOptimizer};
+pub use crate::elf::{elf64_get_section, elf64_write};
+pub use crate::lir::{LIRBuilder, LIR};
+pub use crate::optimizer::{OldOptimizer, Optimizer};
+pub use crate::parser::{parse, AST};

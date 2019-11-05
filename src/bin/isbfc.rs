@@ -5,7 +5,7 @@ use std::process::{self, Command, Stdio};
 use clap::{App, Arg, ArgGroup};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
-use isbfc::{Optimizer, OldOptimizer};
+use isbfc::{OldOptimizer, Optimizer};
 
 fn main() {
     let matches = App::new("isbfc")
@@ -128,16 +128,18 @@ pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> String {
         .arg("-") // Standard input
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .spawn().unwrap();
+        .spawn()
+        .unwrap();
 
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(c.as_bytes()).unwrap();
+    child.stdin.take().unwrap().write_all(c.as_bytes()).unwrap();
 
     let mut code = String::new();
-    child.stdout.take().unwrap().read_to_string(&mut code).unwrap();
+    child
+        .stdout
+        .take()
+        .unwrap()
+        .read_to_string(&mut code)
+        .unwrap();
 
     if !child.wait().unwrap().success() {
         process::exit(1);

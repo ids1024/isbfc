@@ -28,7 +28,7 @@ pub fn elf64_write(f: &mut impl Write, text: &[u8], bss_size: u64) -> io::Result
             ei_version: 1,
             ei_osabi: ELFOSABI_SYSV,
             ei_abiversion: 0,
-            ei_pad: [0; 7]
+            ei_pad: [0; 7],
         },
         e_type: ET_EXEC,
         e_machine: EM_X86_64,

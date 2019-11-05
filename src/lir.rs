@@ -4,7 +4,7 @@
 // Need to consider fact that output buffer has 8-bit characters, while tape may not
 
 pub mod prelude {
-    use super::{LVal, RVal, LIR, LIRBuilder};
+    use super::{LIRBuilder, LVal, RVal, LIR};
     pub use LVal::*;
     pub use RVal::Immediate;
 }
@@ -66,14 +66,12 @@ pub enum LIR {
 
 #[derive(Default)]
 pub struct LIRBuilder {
-    lir: Vec<LIR>
+    lir: Vec<LIR>,
 }
 
 impl LIRBuilder {
     pub fn new() -> Self {
-        Self {
-            lir: Vec::new()
-        }
+        Self { lir: Vec::new() }
     }
 
     pub fn shift(&mut self, offset: i32) -> &mut Self {

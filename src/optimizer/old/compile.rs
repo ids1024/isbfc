@@ -1,5 +1,5 @@
-use crate::lir::{self, LIR, LIRBuilder};
 use super::token::Token;
+use crate::lir::{self, LIRBuilder, LIR};
 
 #[derive(Default)]
 struct CompileState {
@@ -25,14 +25,20 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
     let mut outbuffpos = 0;
     for token in tokens {
         match *token {
-            Token::Add(offset, value) => { state.lir.add(Tape(offset), Tape(offset), Immediate(value)); },
+            Token::Add(offset, value) => {
+                state.lir.add(Tape(offset), Tape(offset), Immediate(value));
+            }
             Token::MulCopy(src_idx, dest_idx, mult) => {
                 let reg = state.reg();
                 state.lir.mul(Reg(reg), Tape(src_idx), Immediate(mult));
                 state.lir.add(Tape(dest_idx), Tape(dest_idx), Reg(reg));
             }
-            Token::Set(offset, value) => { state.lir.mov(Tape(offset), Immediate(value)); },
-            Token::Move(offset) => { state.lir.shift(offset); },
+            Token::Set(offset, value) => {
+                state.lir.mov(Tape(offset), Immediate(value));
+            }
+            Token::Move(offset) => {
+                state.lir.shift(offset);
+            }
             Token::Loop(ref content) => {
                 state.loopnum += 1;
                 let startlabel = format!("loop{}", state.loopnum);
@@ -73,11 +79,15 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
             Token::LoadOut(offset, addend) => {
                 let reg = state.reg();
                 state.lir.add(Reg(reg), Tape(offset), Immediate(addend));
-                state.lir.mov(Buf("strbuf".to_string(), outbuffpos), Reg(reg));
+                state
+                    .lir
+                    .mov(Buf("strbuf".to_string(), outbuffpos), Reg(reg));
                 outbuffpos += 1;
             }
             Token::LoadOutSet(value) => {
-                state.lir.mov(Buf("strbuf".to_string(), outbuffpos), Immediate(value));
+                state
+                    .lir
+                    .mov(Buf("strbuf".to_string(), outbuffpos), Immediate(value));
                 outbuffpos += 1;
             }
             Token::Output => {
@@ -94,7 +104,9 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
 pub fn compile(tokens: &[Token]) -> Vec<LIR> {
     let mut state = CompileState::default();
     compile_iter(&mut state, tokens);
-    state.lir.declare_bss_buf("strbuf".to_string(), state.outbuffsize);
+    state
+        .lir
+        .declare_bss_buf("strbuf".to_string(), state.outbuffsize);
     state.lir.declare_bss_buf("inputbuf".to_string(), 1);
     state.lir.build()
 }

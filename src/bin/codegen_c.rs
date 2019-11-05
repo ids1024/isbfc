@@ -1,8 +1,8 @@
 extern crate isbfc;
 
-use std::io::{Read, Write};
 use isbfc::codegen::c_codegen::{codegen, CellType};
-use isbfc::{Optimizer, OldOptimizer};
+use isbfc::{OldOptimizer, Optimizer};
+use std::io::{Read, Write};
 
 fn main() {
     let mut code = Vec::new();

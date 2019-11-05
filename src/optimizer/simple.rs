@@ -2,9 +2,9 @@
 // Serves as an example optimizer implementation, and perhaps
 // useful as a reference for benchmarking and debugging.
 
-use std::io::Write;
-use crate::{AST, LIR, LIRBuilder};
 use super::Optimizer;
+use crate::{LIRBuilder, AST, LIR};
+use std::io::Write;
 
 pub struct SimpleOptimizer;
 
@@ -32,7 +32,7 @@ fn optimize(ast: &[AST], level: u32, loopnum: &mut u32, lir: &mut LIRBuilder) {
             AST::Output => {
                 lir.mov(Buf("strbuf".to_string(), 0), Tape(0));
                 lir.output("strbuf".to_string(), 0, 1);
-            },
+            }
             AST::Input => {
                 lir.input("strbuf".to_string(), 0, 1);
                 lir.mov(Tape(0), Buf("strbuf".to_string(), 0));
@@ -49,13 +49,19 @@ fn optimize(ast: &[AST], level: u32, loopnum: &mut u32, lir: &mut LIRBuilder) {
 
                 lir.label(endlabel.clone());
                 lir.jnz(Tape(0), startlabel.clone());
-
-
             }
-            AST::Right => { lir.shift(1); },
-            AST::Left => { lir.shift(-1); },
-            AST::Inc => { lir.add(Reg(0), Reg(0), Immediate(1)); },
-            AST::Dec => { lir.add(Reg(0), Reg(0), Immediate(-1)); },
+            AST::Right => {
+                lir.shift(1);
+            }
+            AST::Left => {
+                lir.shift(-1);
+            }
+            AST::Inc => {
+                lir.add(Reg(0), Reg(0), Immediate(1));
+            }
+            AST::Dec => {
+                lir.add(Reg(0), Reg(0), Immediate(-1));
+            }
         }
     }
 }
