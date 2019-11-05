@@ -3,7 +3,7 @@
 // useful as a reference for benchmarking and debugging.
 
 use std::io::Write;
-use crate::{AST, LIR};
+use crate::{AST, LIR, LIRBuilder};
 use super::Optimizer;
 
 pub struct SimpleOptimizer;
@@ -11,7 +11,9 @@ pub struct SimpleOptimizer;
 impl Optimizer for SimpleOptimizer {
     fn optimize(ast: &[AST], level: u32) -> Vec<LIR> {
         let mut loopnum = 0;
-        optimize(ast, level, &mut loopnum)
+        let mut lir = LIRBuilder::new();
+        optimize(ast, level, &mut loopnum, &mut lir);
+        lir.build()
     }
 
     fn dumpir(ast: &[AST], level: u32, file: &mut impl Write) -> std::io::Result<(())> {
@@ -20,43 +22,40 @@ impl Optimizer for SimpleOptimizer {
     }
 }
 
-fn optimize(ast: &[AST], level: u32, loopnum: &mut u32) -> Vec<LIR> {
-    use crate::lir::lir::*;
+fn optimize(ast: &[AST], level: u32, loopnum: &mut u32, lir: &mut LIRBuilder) {
+    use crate::lir::prelude::*;
 
-    let mut lir = Vec::new();
-
-    lir.push(declare_bss_buf("strbuf".to_string(), 1));
+    lir.declare_bss_buf("strbuf".to_string(), 1);
 
     for i in ast {
         match i {
             AST::Output => {
-                lir.push(mov(Buf("strbuf".to_string(), 0), Tape(0)));
-                lir.push(output("strbuf".to_string(), 0, 1));
+                lir.mov(Buf("strbuf".to_string(), 0), Tape(0));
+                lir.output("strbuf".to_string(), 0, 1);
             },
             AST::Input => {
-                lir.push(input("strbuf".to_string(), 0, 1));
-                lir.push(mov(Tape(0), Buf("strbuf".to_string(), 0)));
+                lir.input("strbuf".to_string(), 0, 1);
+                lir.mov(Tape(0), Buf("strbuf".to_string(), 0));
             }
             AST::Loop(ast) => {
                 *loopnum += 1;
                 let startlabel = format!("loop{}", loopnum);
                 let endlabel = format!("endloop{}", loopnum);
 
-                lir.push(jp(endlabel.clone()));
-                lir.push(label(startlabel.clone()));
+                lir.jp(endlabel.clone());
+                lir.label(startlabel.clone());
 
-                lir.extend(optimize(ast, level, loopnum));
+                optimize(ast, level, loopnum, lir);
 
-                lir.push(label(endlabel.clone()));
-                lir.push(jnz(Tape(0), startlabel.clone()));
+                lir.label(endlabel.clone());
+                lir.jnz(Tape(0), startlabel.clone());
 
 
             }
-            AST::Right => lir.push(shift(1)),
-            AST::Left => lir.push(shift(-1)),
-            AST::Inc => lir.push(add(Reg(0), Reg(0), Immediate(1))),
-            AST::Dec => lir.push(add(Reg(0), Reg(0), Immediate(-1))),
+            AST::Right => { lir.shift(1); },
+            AST::Left => { lir.shift(-1); },
+            AST::Inc => { lir.add(Reg(0), Reg(0), Immediate(1)); },
+            AST::Dec => { lir.add(Reg(0), Reg(0), Immediate(-1)); },
         }
     }
-    lir
 }

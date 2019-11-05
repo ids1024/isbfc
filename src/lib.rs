@@ -20,6 +20,6 @@ pub mod codegen;
 
 pub use crate::elf::{elf64_get_section, elf64_write};
 pub use crate::parser::{parse, AST};
-pub use crate::lir::LIR;
+pub use crate::lir::{LIR, LIRBuilder};
 pub use crate::assembly::{assemble, link};
 pub use crate::optimizer::{Optimizer, OldOptimizer};

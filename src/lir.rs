@@ -3,6 +3,12 @@
 // Could use Cow<'static, String> instead of String? Won't that require &String?
 // Need to consider fact that output buffer has 8-bit characters, while tape may not
 
+pub mod prelude {
+    use super::{LVal, RVal, LIR, LIRBuilder};
+    pub use LVal::*;
+    pub use RVal::Immediate;
+}
+
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum LVal {
     Reg(u32),
@@ -58,41 +64,79 @@ pub enum LIR {
     Output(String, usize, usize),
 }
 
-// Shorthand notation for constructing LIR
-pub mod lir {
-    use super::{LVal, RVal, LIR};
+#[derive(Default)]
+pub struct LIRBuilder {
+    lir: Vec<LIR>
+}
 
-    pub use LVal::*;
-    pub use RVal::Immediate;
-
-    pub use LIR::Shift as shift;
-    pub use LIR::Label as label;
-    pub use LIR::Jp as jp;
-    pub use LIR::DeclareBssBuf as declare_bss_buf;
-    pub use LIR::Input as input;
-    pub use LIR::Output as output;
-
-    pub fn mul(dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> LIR {
-        LIR::Mul(dest, a.into(), b.into())
+impl LIRBuilder {
+    pub fn new() -> Self {
+        Self {
+            lir: Vec::new()
+        }
     }
 
-    pub fn add(dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> LIR {
-        LIR::Add(dest, a.into(), b.into())
+    pub fn shift(&mut self, offset: i32) -> &mut Self {
+        self.lir.push(LIR::Shift(offset));
+        self
     }
 
-    pub fn sub(dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> LIR {
-        LIR::Sub(dest, a.into(), b.into())
+    pub fn label(&mut self, name: String) -> &mut Self {
+        self.lir.push(LIR::Label(name));
+        self
     }
 
-    pub fn mov(dest: LVal, src: impl Into<RVal>) -> LIR {
-        LIR::Mov(dest, src.into())
+    pub fn jp(&mut self, name: String) -> &mut Self {
+        self.lir.push(LIR::Jp(name));
+        self
     }
 
-    pub fn jz(comparand: impl Into<RVal>, name: String) -> LIR {
-        LIR::Jz(comparand.into(), name)
+    pub fn declare_bss_buf(&mut self, name: String, size: usize) -> &mut Self {
+        self.lir.push(LIR::DeclareBssBuf(name, size));
+        self
     }
 
-    pub fn jnz(comparand: impl Into<RVal>, name: String) -> LIR {
-        LIR::Jnz(comparand.into(), name)
+    pub fn input(&mut self, name: String, offset: usize, size: usize) -> &mut Self {
+        self.lir.push(LIR::Input(name, offset, size));
+        self
+    }
+
+    pub fn output(&mut self, name: String, offset: usize, size: usize) -> &mut Self {
+        self.lir.push(LIR::Output(name, offset, size));
+        self
+    }
+
+    pub fn mul(&mut self, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> &mut LIRBuilder {
+        self.lir.push(LIR::Mul(dest, a.into(), b.into()));
+        self
+    }
+
+    pub fn add(&mut self, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> &mut LIRBuilder {
+        self.lir.push(LIR::Add(dest, a.into(), b.into()));
+        self
+    }
+
+    pub fn sub(&mut self, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> &mut LIRBuilder {
+        self.lir.push(LIR::Sub(dest, a.into(), b.into()));
+        self
+    }
+
+    pub fn mov(&mut self, dest: LVal, src: impl Into<RVal>) -> &mut LIRBuilder {
+        self.lir.push(LIR::Mov(dest, src.into()));
+        self
+    }
+
+    pub fn jz(&mut self, comparand: impl Into<RVal>, name: String) -> &mut LIRBuilder {
+        self.lir.push(LIR::Jz(comparand.into(), name));
+        self
+    }
+
+    pub fn jnz(&mut self, comparand: impl Into<RVal>, name: String) -> &mut LIRBuilder {
+        self.lir.push(LIR::Jnz(comparand.into(), name));
+        self
+    }
+
+    pub fn build(self) -> Vec<LIR> {
+        self.lir
     }
 }
