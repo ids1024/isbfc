@@ -57,10 +57,10 @@ fn optimize(ast: &[AST], level: u32, loopnum: &mut u32, lir: &mut LIRBuilder) {
                 lir.shift(-1);
             }
             AST::Inc => {
-                lir.add(Reg(0), Reg(0), Immediate(1));
+                lir.add(Tape(0), Tape(0), Immediate(1));
             }
             AST::Dec => {
-                lir.add(Reg(0), Reg(0), Immediate(-1));
+                lir.add(Tape(0), Tape(0), Immediate(-1));
             }
         }
     }
