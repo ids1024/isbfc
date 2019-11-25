@@ -69,70 +69,33 @@ pub struct LIRBuilder {
     lir: Vec<LIR>,
 }
 
+/// Defines a method that pushes a token to self.lir
+macro_rules! pusher {
+    ( $name:ident, $variant:ident, $( $arg:ident : $type:ty ),* ) => {
+        pub fn $name(&mut self, $( $arg: $type ),*) -> &mut Self {
+            self.lir.push(LIR::$variant($( $arg.into() ),*));
+            self
+        }
+    }
+}
+
 impl LIRBuilder {
     pub fn new() -> Self {
         Self { lir: Vec::new() }
     }
 
-    pub fn shift(&mut self, offset: i32) -> &mut Self {
-        self.lir.push(LIR::Shift(offset));
-        self
-    }
-
-    pub fn label(&mut self, name: String) -> &mut Self {
-        self.lir.push(LIR::Label(name));
-        self
-    }
-
-    pub fn jp(&mut self, name: String) -> &mut Self {
-        self.lir.push(LIR::Jp(name));
-        self
-    }
-
-    pub fn declare_bss_buf(&mut self, name: String, size: usize) -> &mut Self {
-        self.lir.push(LIR::DeclareBssBuf(name, size));
-        self
-    }
-
-    pub fn input(&mut self, name: String, offset: usize, size: usize) -> &mut Self {
-        self.lir.push(LIR::Input(name, offset, size));
-        self
-    }
-
-    pub fn output(&mut self, name: String, offset: usize, size: usize) -> &mut Self {
-        self.lir.push(LIR::Output(name, offset, size));
-        self
-    }
-
-    pub fn mul(&mut self, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> &mut LIRBuilder {
-        self.lir.push(LIR::Mul(dest, a.into(), b.into()));
-        self
-    }
-
-    pub fn add(&mut self, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> &mut LIRBuilder {
-        self.lir.push(LIR::Add(dest, a.into(), b.into()));
-        self
-    }
-
-    pub fn sub(&mut self, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>) -> &mut LIRBuilder {
-        self.lir.push(LIR::Sub(dest, a.into(), b.into()));
-        self
-    }
-
-    pub fn mov(&mut self, dest: LVal, src: impl Into<RVal>) -> &mut LIRBuilder {
-        self.lir.push(LIR::Mov(dest, src.into()));
-        self
-    }
-
-    pub fn jz(&mut self, comparand: impl Into<RVal>, name: String) -> &mut LIRBuilder {
-        self.lir.push(LIR::Jz(comparand.into(), name));
-        self
-    }
-
-    pub fn jnz(&mut self, comparand: impl Into<RVal>, name: String) -> &mut LIRBuilder {
-        self.lir.push(LIR::Jnz(comparand.into(), name));
-        self
-    }
+    pusher!(shift, Shift, offset: i32);
+    pusher!(label, Label, name: String);
+    pusher!(declare_bss_buf, DeclareBssBuf, name: String, size: usize);
+    pusher!(input, Input, name: String, offset: usize, size: usize);
+    pusher!(output, Output, name: String, offset: usize, size: usize);
+    pusher!(mul, Mul, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
+    pusher!(add, Add, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
+    pusher!(sub, Sub, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
+    pusher!(mov, Mov, dest: LVal, src: impl Into<RVal>);
+    pusher!(jp, Jp, name: String);
+    pusher!(jz, Jz, comparand: impl Into<RVal>, name: String);
+    pusher!(jnz, Jnz, comparand: impl Into<RVal>, name: String);
 
     pub fn build(self) -> Vec<LIR> {
         self.lir
