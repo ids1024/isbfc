@@ -5,7 +5,7 @@ use std::process::{self, Command, Stdio};
 use clap::{App, Arg, ArgGroup};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
-use isbfc::{OldOptimizer, Optimizer};
+use isbfc::OPTIMIZERS;
 
 fn main() {
     let matches = App::new("isbfc")
@@ -51,6 +51,13 @@ fn main() {
                 .help("Generate minimal ELF executable"),
         )
         .arg(
+            Arg::with_name("optimizer")
+                .long("optimizer")
+                .takes_value(true)
+                .possible_values(&OPTIMIZERS.keys().cloned().collect::<Vec<&str>>())
+                .default_value("old")
+        )
+        .arg(
             Arg::with_name("level")
                 .short("O")
                 .help("Optimization level")
@@ -88,14 +95,16 @@ fn main() {
         }
     };
 
-    let lir = OldOptimizer::optimize(&ast, level);
+    let optimizer = OPTIMIZERS.get(matches.value_of("optimizer").unwrap()).unwrap();
+
+    let lir = optimizer.optimize(&ast, level);
 
     if matches.is_present("dump_ir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
-            OldOptimizer::dumpir(&ast, level, &mut irfile).unwrap();
+            optimizer.dumpir(&ast, level, &mut irfile).unwrap();
         } else {
-            OldOptimizer::dumpir(&ast, level, &mut std::io::stdout()).unwrap();
+            optimizer.dumpir(&ast, level, &mut std::io::stdout()).unwrap();
         };
     } else if matches.is_present("output_asm") {
         println!("Compiling...");

@@ -10,7 +10,7 @@ mod token;
 pub struct OldOptimizer;
 
 impl Optimizer for OldOptimizer {
-    fn optimize(ast: &[AST], level: u32) -> Vec<LIR> {
+    fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR> {
         let mut tokens = token::ast_to_tokens(ast);
         if level > 0 {
             tokens = optimize::optimize(&tokens);
@@ -18,7 +18,7 @@ impl Optimizer for OldOptimizer {
         compile::compile(&tokens)
     }
 
-    fn dumpir(ast: &[AST], level: u32, file: &mut impl Write) -> std::io::Result<(())> {
+    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())> {
         let mut tokens = token::ast_to_tokens(ast);
         if level > 0 {
             tokens = optimize::optimize(&tokens);

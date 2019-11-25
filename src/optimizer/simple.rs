@@ -9,16 +9,16 @@ use std::io::Write;
 pub struct SimpleOptimizer;
 
 impl Optimizer for SimpleOptimizer {
-    fn optimize(ast: &[AST], level: u32) -> Vec<LIR> {
+    fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR> {
         let mut loopnum = 0;
         let mut lir = LIRBuilder::new();
         optimize(ast, level, &mut loopnum, &mut lir);
         lir.build()
     }
 
-    fn dumpir(ast: &[AST], level: u32, file: &mut impl Write) -> std::io::Result<(())> {
+    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())> {
         // Optimizer lacks its own IR, so dump LIR
-        writeln!(file, "{:#?}", Self::optimize(ast, level))
+        writeln!(file, "{:#?}", self.optimize(ast, level))
     }
 }
 
