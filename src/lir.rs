@@ -1,15 +1,5 @@
 #![allow(dead_code)]
 
-///! LIR is isbfc's low level intermediate representation. In principle,
-/// it serves a similar roles to LLVM IR, but it is much similer
-/// and includes some Brainfuck specfic features.
-///
-/// Goals:
-/// * Architecture agnostic
-/// * Attempt to represent anything a Brainfuck compiler might want to
-///   generate, without bias for a specific optimization design.
-/// * Cell size agnostic
-
 // Could use Cow<'static, String> instead of String? Won't that require &String?
 // Need to consider fact that output buffer has 8-bit characters, while tape may not
 
@@ -58,6 +48,15 @@ impl From<LVal> for RVal {
     }
 }
 
+/// LIR is isbfc's low level intermediate representation. In principle,
+/// it serves a similar roles to LLVM IR, but it is much similer
+/// and includes some Brainfuck specfic features.
+///
+/// Goals:
+/// * Architecture agnostic
+/// * Attempt to represent anything a Brainfuck compiler might want to
+///   generate, without bias for a specific optimization design.
+/// * Cell size agnostic
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum LIR {
     Shift(i32),
