@@ -55,7 +55,7 @@ fn main() {
                 .long("optimizer")
                 .takes_value(true)
                 .possible_values(&OPTIMIZERS.keys().cloned().collect::<Vec<&str>>())
-                .default_value("old")
+                .default_value("old"),
         )
         .arg(
             Arg::with_name("level")
@@ -95,7 +95,9 @@ fn main() {
         }
     };
 
-    let optimizer = OPTIMIZERS.get(matches.value_of("optimizer").unwrap()).unwrap();
+    let optimizer = OPTIMIZERS
+        .get(matches.value_of("optimizer").unwrap())
+        .unwrap();
 
     let lir = optimizer.optimize(&ast, level);
 
@@ -104,7 +106,9 @@ fn main() {
             let mut irfile = File::create(out_name).unwrap();
             optimizer.dumpir(&ast, level, &mut irfile).unwrap();
         } else {
-            optimizer.dumpir(&ast, level, &mut std::io::stdout()).unwrap();
+            optimizer
+                .dumpir(&ast, level, &mut std::io::stdout())
+                .unwrap();
         };
     } else if matches.is_present("output_asm") {
         println!("Compiling...");

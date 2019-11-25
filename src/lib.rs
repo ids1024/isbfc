@@ -21,5 +21,5 @@ mod parser;
 pub use crate::assembly::{assemble, link};
 pub use crate::elf::{elf64_get_section, elf64_write};
 pub use crate::lir::{LIRBuilder, LIR};
-pub use crate::optimizer::{OldOptimizer, SimpleOptimizer, Optimizer, OPTIMIZERS};
+pub use crate::optimizer::{OldOptimizer, Optimizer, SimpleOptimizer, OPTIMIZERS};
 pub use crate::parser::{parse, AST};

@@ -1,7 +1,7 @@
 use crate::{AST, LIR};
-use std::io::Write;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
+use std::io::Write;
 
 mod old;
 mod simple;
@@ -9,7 +9,7 @@ mod simple;
 pub use old::OldOptimizer;
 pub use simple::SimpleOptimizer;
 
-pub trait Optimizer : Sync {
+pub trait Optimizer: Sync {
     fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR>;
     fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())>;
 }
