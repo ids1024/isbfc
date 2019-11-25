@@ -43,7 +43,7 @@ pub struct Elf64_Ident {
     pub ei_pad: [u8; 7],
 }
 
-// ELF header
+/// ELF header
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Elf64_Ehdr {
@@ -63,7 +63,7 @@ pub struct Elf64_Ehdr {
     pub e_shstrndx: Elf64_Half,
 }
 
-// Program header
+/// Program header
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Elf64_Phdr {
@@ -77,7 +77,7 @@ pub struct Elf64_Phdr {
     pub p_align: Elf64_Xword,
 }
 
-// Symbol header
+/// Symbol header
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Elf64_Shdr {
