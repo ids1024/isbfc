@@ -25,17 +25,17 @@ impl Optimizer for SimpleOptimizer {
 fn optimize(ast: &[AST], level: u32, loopnum: &mut u32, lir: &mut LIRBuilder) {
     use crate::lir::prelude::*;
 
-    lir.declare_bss_buf("strbuf".to_string(), 1);
+    lir.declare_bss_buf("strbuf", 1);
 
     for i in ast {
         match i {
             AST::Output => {
-                lir.mov(Buf("strbuf".to_string(), 0), Tape(0));
-                lir.output("strbuf".to_string(), 0, 1);
+                lir.mov(Buf("strbuf".into(), 0), Tape(0));
+                lir.output("strbuf", 0, 1);
             }
             AST::Input => {
-                lir.input("strbuf".to_string(), 0, 1);
-                lir.mov(Tape(0), Buf("strbuf".to_string(), 0));
+                lir.input("strbuf", 0, 1);
+                lir.mov(Tape(0), Buf("strbuf".into(), 0));
             }
             AST::Loop(ast) => {
                 *loopnum += 1;

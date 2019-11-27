@@ -1,6 +1,6 @@
 // XXX: WIP, not usable
 
-use crate::lir::LIR;
+use crate::lir::{LIR, CowStr};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter, Write};
 
@@ -64,15 +64,15 @@ enum Instr {
     Subb,
     Addb,
     Cmp,
-    Jnz(String),
-    Jz(String),
-    Jmp(String),
+    Jnz(CowStr),
+    Jz(CowStr),
+    Jmp(CowStr),
     Test,
     Cmpq,
     Mulq,
     Dec,
     Inc,
-    Label(String),
+    Label(CowStr),
 }
 
 impl Display for Instr {
@@ -112,7 +112,7 @@ fn val_to_asm(val: impl Into<RVal>) -> String {
 }
 */
 
-fn lir_to_instrs(lir: &[LIR], bss_bufs: &mut HashMap<String, usize>) -> Vec<Instr> {
+fn lir_to_instrs(lir: &[LIR], bss_bufs: &mut HashMap<CowStr, usize>) -> Vec<Instr> {
     use LIR::*;
 
     let mut instrs = Vec::new();

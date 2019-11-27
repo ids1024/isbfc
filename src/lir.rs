@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-// Could use Cow<'static, String> instead of String? Won't that require &String?
+use std::borrow::Cow;
+
+pub type CowStr = Cow<'static, str>;
+
 // Need to consider fact that output buffer has 8-bit characters, while tape may not
 
 pub mod prelude {
@@ -13,14 +16,14 @@ pub mod prelude {
 pub enum LVal {
     Reg(u32),
     Tape(i32),
-    Buf(String, usize),
+    Buf(CowStr, usize),
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum RVal {
     Reg(u32),
     Tape(i32),
-    Buf(String, usize),
+    Buf(CowStr, usize),
     Immediate(i32),
 }
 
@@ -64,13 +67,13 @@ pub enum LIR {
     Add(LVal, RVal, RVal),
     Sub(LVal, RVal, RVal),
     Mov(LVal, RVal),
-    Label(String),
-    Jp(String),
-    Jz(RVal, String),
-    Jnz(RVal, String),
-    DeclareBssBuf(String, usize),
-    Input(String, usize, usize),
-    Output(String, usize, usize),
+    Label(CowStr),
+    Jp(CowStr),
+    Jz(RVal, CowStr),
+    Jnz(RVal, CowStr),
+    DeclareBssBuf(CowStr, usize),
+    Input(CowStr, usize, usize),
+    Output(CowStr, usize, usize),
 }
 
 #[derive(Default)]
@@ -94,17 +97,17 @@ impl LIRBuilder {
     }
 
     pusher!(shift, Shift, offset: i32);
-    pusher!(label, Label, name: String);
-    pusher!(declare_bss_buf, DeclareBssBuf, name: String, size: usize);
-    pusher!(input, Input, name: String, offset: usize, size: usize);
-    pusher!(output, Output, name: String, offset: usize, size: usize);
+    pusher!(label, Label, name: impl Into<CowStr>);
+    pusher!(declare_bss_buf, DeclareBssBuf, name: impl Into<CowStr>, size: usize);
+    pusher!(input, Input, name: impl Into<CowStr>, offset: usize, size: usize);
+    pusher!(output, Output, name: impl Into<CowStr>, offset: usize, size: usize);
     pusher!(mul, Mul, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
     pusher!(add, Add, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
     pusher!(sub, Sub, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
     pusher!(mov, Mov, dest: LVal, src: impl Into<RVal>);
-    pusher!(jp, Jp, name: String);
-    pusher!(jz, Jz, comparand: impl Into<RVal>, name: String);
-    pusher!(jnz, Jnz, comparand: impl Into<RVal>, name: String);
+    pusher!(jp, Jp, name: impl Into<CowStr>);
+    pusher!(jz, Jz, comparand: impl Into<RVal>, name: impl Into<CowStr>);
+    pusher!(jnz, Jnz, comparand: impl Into<RVal>, name: impl Into<CowStr>);
 
     pub fn build(self) -> Vec<LIR> {
         self.lir

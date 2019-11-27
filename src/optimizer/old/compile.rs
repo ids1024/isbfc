@@ -73,25 +73,25 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
             }
             // XXX
             Token::Input => {
-                state.lir.input("inputbuf".to_string(), 0, 1);
-                state.lir.mov(Tape(0), Buf("inputbuf".to_string(), 0));
+                state.lir.input("inputbuf", 0, 1);
+                state.lir.mov(Tape(0), Buf("inputbuf".into(), 0));
             }
             Token::LoadOut(offset, addend) => {
                 let reg = state.reg();
                 state.lir.add(Reg(reg), Tape(offset), Immediate(addend));
                 state
                     .lir
-                    .mov(Buf("strbuf".to_string(), outbuffpos), Reg(reg));
+                    .mov(Buf("strbuf".into(), outbuffpos), Reg(reg));
                 outbuffpos += 1;
             }
             Token::LoadOutSet(value) => {
                 state
                     .lir
-                    .mov(Buf("strbuf".to_string(), outbuffpos), Immediate(value));
+                    .mov(Buf("strbuf".into(), outbuffpos), Immediate(value));
                 outbuffpos += 1;
             }
             Token::Output => {
-                state.lir.output("strbuf".to_string(), 0, outbuffpos);
+                state.lir.output("strbuf", 0, outbuffpos);
                 if state.outbuffsize < outbuffpos + 1 {
                     state.outbuffsize = outbuffpos + 1;
                 }
@@ -106,7 +106,7 @@ pub fn compile(tokens: &[Token]) -> Vec<LIR> {
     compile_iter(&mut state, tokens);
     state
         .lir
-        .declare_bss_buf("strbuf".to_string(), state.outbuffsize);
-    state.lir.declare_bss_buf("inputbuf".to_string(), 1);
+        .declare_bss_buf("strbuf", state.outbuffsize);
+    state.lir.declare_bss_buf("inputbuf", 1);
     state.lir.build()
 }
