@@ -7,7 +7,7 @@ pub type CowStr = Cow<'static, str>;
 // Need to consider fact that output buffer has 8-bit characters, while tape may not
 
 pub mod prelude {
-    use super::{LIRBuilder, LVal, RVal, LIR};
+    pub use super::{LIRBuilder, LVal, RVal, LIR};
     pub use LVal::*;
     pub use RVal::Immediate;
 }
