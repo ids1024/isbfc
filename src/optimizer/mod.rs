@@ -3,13 +3,13 @@ use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::io::Write;
 
+mod new;
 mod old;
 mod simple;
-mod new;
 
+pub use new::NewOptimizer;
 pub use old::OldOptimizer;
 pub use simple::SimpleOptimizer;
-pub use new::NewOptimizer;
 
 pub trait Optimizer: Sync {
     fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR>;

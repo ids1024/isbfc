@@ -98,16 +98,38 @@ impl LIRBuilder {
 
     pusher!(shift, Shift, offset: i32);
     pusher!(label, Label, name: impl Into<CowStr>);
-    pusher!(declare_bss_buf, DeclareBssBuf, name: impl Into<CowStr>, size: usize);
-    pusher!(input, Input, name: impl Into<CowStr>, offset: usize, size: usize);
-    pusher!(output, Output, name: impl Into<CowStr>, offset: usize, size: usize);
+    pusher!(
+        declare_bss_buf,
+        DeclareBssBuf,
+        name: impl Into<CowStr>,
+        size: usize
+    );
+    pusher!(
+        input,
+        Input,
+        name: impl Into<CowStr>,
+        offset: usize,
+        size: usize
+    );
+    pusher!(
+        output,
+        Output,
+        name: impl Into<CowStr>,
+        offset: usize,
+        size: usize
+    );
     pusher!(mul, Mul, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
     pusher!(add, Add, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
     pusher!(sub, Sub, dest: LVal, a: impl Into<RVal>, b: impl Into<RVal>);
     pusher!(mov, Mov, dest: LVal, src: impl Into<RVal>);
     pusher!(jp, Jp, name: impl Into<CowStr>);
     pusher!(jz, Jz, comparand: impl Into<RVal>, name: impl Into<CowStr>);
-    pusher!(jnz, Jnz, comparand: impl Into<RVal>, name: impl Into<CowStr>);
+    pusher!(
+        jnz,
+        Jnz,
+        comparand: impl Into<RVal>,
+        name: impl Into<CowStr>
+    );
 
     pub fn build(self) -> Vec<LIR> {
         self.lir

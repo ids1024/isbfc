@@ -1,6 +1,6 @@
 // XXX: WIP, not usable
 
-use crate::lir::{LIR, CowStr};
+use crate::lir::{CowStr, LIR};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter, Write};
 

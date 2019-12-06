@@ -79,9 +79,7 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
             Token::LoadOut(offset, addend) => {
                 let reg = state.reg();
                 state.lir.add(Reg(reg), Tape(offset), Immediate(addend));
-                state
-                    .lir
-                    .mov(Buf("strbuf".into(), outbuffpos), Reg(reg));
+                state.lir.mov(Buf("strbuf".into(), outbuffpos), Reg(reg));
                 outbuffpos += 1;
             }
             Token::LoadOutSet(value) => {
@@ -104,9 +102,7 @@ fn compile_iter(state: &mut CompileState, tokens: &[Token]) {
 pub fn compile(tokens: &[Token]) -> Vec<LIR> {
     let mut state = CompileState::default();
     compile_iter(&mut state, tokens);
-    state
-        .lir
-        .declare_bss_buf("strbuf", state.outbuffsize);
+    state.lir.declare_bss_buf("strbuf", state.outbuffsize);
     state.lir.declare_bss_buf("inputbuf", 1);
     state.lir.build()
 }
