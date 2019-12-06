@@ -5,9 +5,11 @@ use std::io::Write;
 
 mod old;
 mod simple;
+mod new;
 
 pub use old::OldOptimizer;
 pub use simple::SimpleOptimizer;
+pub use new::NewOptimizer;
 
 pub trait Optimizer: Sync {
     fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR>;
@@ -19,6 +21,7 @@ lazy_static! {
         let mut m = HashMap::new();
         m.insert("old", &OldOptimizer as &dyn Optimizer);
         m.insert("simple", &SimpleOptimizer as &dyn Optimizer);
+        m.insert("new", &NewOptimizer as &dyn Optimizer);
         m
     };
 }
