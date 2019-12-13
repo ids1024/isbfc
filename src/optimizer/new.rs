@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt;
 
 use super::Optimizer;
@@ -13,22 +13,22 @@ pub struct NewOptimizer;
 
 impl Optimizer for NewOptimizer {
     fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR> {
-        let ir = optimize_expr(ast, CalcExpr::new(true)).0;
+        let ir = optimize_expr(ast, DAG::new(true)).0;
         ir_to_lir(&ir)
     }
 
     fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())> {
-        let ir = optimize_expr(ast, CalcExpr::new(true)).0;
+        let ir = optimize_expr(ast, DAG::new(true)).0;
         write!(file, "{:?}", ir)
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Hash)]
 enum Value {
     Tape(i32),
     Const(i32),
-    Multiply(Box<Value>, Box<Value>),
-    Add(Box<Value>, Box<Value>),
+    Multiply(usize, usize),
+    Add(usize, usize),
 }
 
 impl fmt::Debug for Value {
@@ -51,45 +51,74 @@ impl fmt::Debug for Value {
     }
 }
 
+// TODO: try adding HashMap<Value, usize> for reverse node lookup;
+// see if this helps for efficiency.
 #[derive(Clone, Debug)]
-struct CalcExpr {
-    map: BTreeMap<i32, Value>,
+struct DAG {
+    nodes: Vec<Value>,
+    terminals: HashMap<i32, usize>,
     zeroed: bool,
 }
 
-impl CalcExpr {
+impl DAG {
     fn new(zeroed: bool) -> Self {
         Self {
-            map: BTreeMap::new(),
+            nodes: Vec::new(),
+            terminals: HashMap::new(),
             zeroed,
         }
     }
-    fn set(&mut self, offset: i32, value: Value) {
-        self.map.insert(offset, value);
+
+    fn add_node(&mut self, value: Value) -> usize {
+        self.nodes.push(value);
+        self.nodes.len() - 1
     }
-    fn get(&self, offset: i32) -> Value {
-        let default = if self.zeroed {
+
+    fn default_value(&self, offset: i32) -> Value {
+        if self.zeroed {
             Value::Const(0)
         } else {
             Value::Tape(offset)
-        };
-        self.map.get(&offset).cloned().unwrap_or(default)
-    }
-    fn clear(&mut self) {
-        self.map.clear();
-    }
-    fn add(&mut self, offset: i32, value: i32) {
-        if let Some(old_value) = self.map.remove(&offset) {
-            // NOTE: inefficient
-            self.map.insert(
-                offset,
-                Value::Add(Box::new(old_value), Box::new(Value::Const(value))),
-            );
-        } else {
-            self.map.insert(offset, Value::Const(value));
         }
     }
-    //fn shift(&mut self, shift: i32);
+
+    fn set(&mut self, offset: i32, value: Value) {
+        let node = self.add_node(value);
+        self.terminals.insert(offset, node);
+    }
+
+    fn get(&self, offset: i32) -> Value {
+        self.terminals.get(&offset).map(|x| self.nodes[*x]).unwrap_or(self.default_value(offset))
+    }
+
+    fn get_node(&mut self, offset: i32) -> usize {
+        if let Some(node) = self.terminals.get(&offset) {
+            *node
+        } else {
+            let node = self.add_node(self.default_value(offset));
+            self.terminals.insert(offset, node);
+            node
+        }
+    }
+
+    fn add(&mut self, offset: i32, value: Value) {
+        let old_node = self.get_node(offset);
+        let new_node = self.add_node(value);
+        self.set(offset, Value::Add(old_node, new_node));
+    }
+
+    fn clear(&mut self) {
+        self.nodes.clear();
+        self.terminals.clear();
+    }
+
+    fn shift(&mut self, shift: i32) {
+        for i in self.nodes.iter_mut() {
+            if let Value::Tape(offset) = *i {
+                *i = Value::Tape(offset + shift);
+            }
+        }
+    }
     //fn append(&mut self, expr: CalcExpr);
     //fn simplify(&mut self);
 }
@@ -99,13 +128,13 @@ enum IR {
     Output(i32),
     Input(i32),
     Loop(i32, Vec<IR>, i32),
-    Expr(CalcExpr),
+    Expr(DAG),
 }
 
-fn optimize_expr(body: &[AST], outside_expr: CalcExpr) -> (Vec<IR>, i32) {
+fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
     let mut ir = Vec::new();
 
-    let mut expr = CalcExpr::new(outside_expr.zeroed);
+    let mut expr = DAG::new(outside_expr.zeroed);
     let mut shift = 0;
     for i in body {
         match i {
@@ -139,10 +168,10 @@ fn optimize_expr(body: &[AST], outside_expr: CalcExpr) -> (Vec<IR>, i32) {
                 shift -= 1;
             }
             AST::Inc => {
-                expr.add(shift, 1);
+                expr.add(shift, Value::Const(1));
             }
             AST::Dec => {
-                expr.add(shift, -1);
+                expr.add(shift, Value::Const(-1));
             }
         }
     }
@@ -153,7 +182,7 @@ fn optimize_expr(body: &[AST], outside_expr: CalcExpr) -> (Vec<IR>, i32) {
 }
 
 /*
-fn optimize_expr_loop(body_expr: CalcExpr) -> CalcExpr {
+fn optimize_expr_loop(body_expr: DAG) -> DAG {
     let val = body_expr.get(0);
     // Only works when adding const to tape[0]?
     // Total number of iterations:
@@ -166,6 +195,7 @@ fn optimize_expr_loop(body_expr: CalcExpr) -> CalcExpr {
 }
 */
 
+/*
 fn eval_value(value: &Value, tape: &Tape) -> usize {
     match value {
         Value::Tape(offset) => tape.get(*offset as isize),
@@ -174,7 +204,9 @@ fn eval_value(value: &Value, tape: &Tape) -> usize {
         Value::Add(ref l, ref r) => eval_value(l, tape) + eval_value(r, tape),
     }
 }
+*/
 
+/*
 #[derive(Clone)]
 struct Tape {
     tape: [usize; 8192],
@@ -197,6 +229,7 @@ impl Tape {
         self.tape[(self.cursor as isize + offset) as usize] = value;
     }
 }
+*/
 
 #[derive(Default)]
 struct CompileState {
@@ -254,7 +287,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.label(endlabel.clone());
                 state.lir.jnz(Tape(*offset), startlabel.clone());
             }
-            IR::Expr(expr) => for (offset, value) in &expr.map {},
+            IR::Expr(expr) => for (offset, value) in &expr.terminals {},
         }
     }
 
