@@ -22,7 +22,12 @@ fn main() {
                 .long("dumpir")
                 .help("Dump intermediate representation; for debugging"),
         )
-        .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir"]))
+        .arg(
+            Arg::with_name("dump_lir")
+                .long("dumplir")
+                .help("Dump low level intermediate representation; for debugging"),
+        )
+        .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir", "dump_lir"]))
         .arg(
             Arg::with_name("debugging_symbols")
                 .short("g")
@@ -109,6 +114,13 @@ fn main() {
             optimizer
                 .dumpir(&ast, level, &mut std::io::stdout())
                 .unwrap();
+        };
+    } else if matches.is_present("dump_ir") {
+        if let Some(out_name) = matches.value_of("out_name") {
+            let mut irfile = File::create(out_name).unwrap();
+            writeln!(irfile, "{:?}", lir).unwrap();
+        } else {
+            println!("{:?}", lir);
         };
     } else if matches.is_present("output_asm") {
         println!("Compiling...");
