@@ -195,42 +195,6 @@ fn optimize_expr_loop(body_expr: DAG) -> DAG {
 }
 */
 
-/*
-fn eval_value(value: &Value, tape: &Tape) -> usize {
-    match value {
-        Value::Tape(offset) => tape.get(*offset as isize),
-        Value::Const(val) => *val as usize,
-        Value::Multiply(ref l, ref r) => eval_value(l, tape) * eval_value(r, tape),
-        Value::Add(ref l, ref r) => eval_value(l, tape) + eval_value(r, tape),
-    }
-}
-*/
-
-/*
-#[derive(Clone)]
-struct Tape {
-    tape: [usize; 8192],
-    cursor: usize,
-}
-
-impl Tape {
-    fn new() -> Self {
-        Self {
-            tape: [0; 8192],
-            cursor: 8192 / 2,
-        }
-    }
-
-    fn get(&self, offset: isize) -> usize {
-        self.tape[(self.cursor as isize + offset) as usize]
-    }
-
-    fn set(&mut self, offset: isize, value: usize) {
-        self.tape[(self.cursor as isize + offset) as usize] = value;
-    }
-}
-*/
-
 #[derive(Default)]
 struct CompileState {
     lir: LIRBuilder,
