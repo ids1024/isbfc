@@ -19,7 +19,7 @@ impl Optimizer for NewOptimizer {
 
     fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())> {
         let ir = optimize_expr(ast, DAG::new(true)).0;
-        write!(file, "{:?}", ir)
+        write!(file, "{:#?}", ir)
     }
 }
 
