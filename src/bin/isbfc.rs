@@ -19,12 +19,12 @@ fn main() {
         )
         .arg(
             Arg::with_name("dump_ir")
-                .long("dumpir")
+                .long("dump-ir")
                 .help("Dump intermediate representation; for debugging"),
         )
         .arg(
             Arg::with_name("dump_lir")
-                .long("dumplir")
+                .long("dump-lir")
                 .help("Dump low level intermediate representation; for debugging"),
         )
         .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir", "dump_lir"]))
