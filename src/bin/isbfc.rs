@@ -115,7 +115,7 @@ fn main() {
                 .dumpir(&ast, level, &mut std::io::stdout())
                 .unwrap();
         };
-    } else if matches.is_present("dump_ir") {
+    } else if matches.is_present("dump_lir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
             writeln!(irfile, "{:?}", lir).unwrap();
