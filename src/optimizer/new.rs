@@ -131,9 +131,7 @@ impl DAG {
         queue.extend(self.terminals.values().cloned());
         while let Some(i) = queue.pop_front() {
             match self.nodes[i] {
-                Value::Tape(_) => {}
-                Value::Const(_) => {}
-                Value::Multiply(a, b) => {
+                Value::Multiply(a, b) | Value::Add(a, b) => {
                     if !set.contains(&a) {
                         queue.push_back(a);
                         set.insert(a);
@@ -143,16 +141,7 @@ impl DAG {
                         set.insert(b);
                     }
                 }
-                Value::Add(a, b) => {
-                    if !set.contains(&a) {
-                        queue.push_back(a);
-                        set.insert(a);
-                    }
-                    if !set.contains(&b) {
-                        queue.push_back(b);
-                        set.insert(b);
-                    }
-                }
+                Value::Tape(_) | Value::Const(_) => {}
             }
         }
         set.into_iter()
