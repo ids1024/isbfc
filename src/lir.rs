@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::borrow::Cow;
+use std::fmt;
 
 pub type CowStr = Cow<'static, str>;
 
@@ -12,14 +13,14 @@ pub mod prelude {
     pub use RVal::Immediate;
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum LVal {
     Reg(u32),
     Tape(i32),
     Buf(CowStr, usize),
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum RVal {
     Reg(u32),
     Tape(i32),
@@ -47,6 +48,23 @@ impl From<LVal> for RVal {
             LVal::Reg(num) => RVal::Reg(num),
             LVal::Tape(offset) => RVal::Tape(offset),
             LVal::Buf(name, offset) => RVal::Buf(name, offset),
+        }
+    }
+}
+
+impl fmt::Debug for LVal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", RVal::from(self.clone()))
+    }
+}
+
+impl fmt::Debug for RVal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RVal::Reg(num) => write!(f, "%r{}", num),
+            RVal::Tape(offset) => write!(f, "TAPE[{}]", offset),
+            RVal::Buf(name, offset) => write!(f, "{}[{}]", name, offset),
+            RVal::Immediate(value) => write!(f, "{}", value),
         }
     }
 }

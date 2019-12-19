@@ -118,9 +118,13 @@ fn main() {
     } else if matches.is_present("dump_lir") {
         if let Some(out_name) = matches.value_of("out_name") {
             let mut irfile = File::create(out_name).unwrap();
-            writeln!(irfile, "{:#?}", lir).unwrap();
+            for i in lir {
+                writeln!(irfile, "{:?}", i).unwrap();
+            }
         } else {
-            println!("{:#?}", lir);
+            for i in lir {
+                println!("{:?}", i);
+            }
         };
     } else if matches.is_present("output_asm") {
         println!("Compiling...");
