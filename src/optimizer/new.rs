@@ -2,9 +2,7 @@
 
 #![allow(dead_code)]
 
-use std::collections::HashMap;
-use std::collections::BTreeSet;
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::fmt;
 
 use super::Optimizer;
@@ -90,7 +88,10 @@ impl DAG {
     }
 
     fn get(&self, offset: i32) -> Value {
-        self.terminals.get(&offset).map(|x| self.nodes[*x]).unwrap_or(self.default_value(offset))
+        self.terminals
+            .get(&offset)
+            .map(|x| self.nodes[*x])
+            .unwrap_or(self.default_value(offset))
     }
 
     fn get_node(&mut self, offset: i32) -> usize {
@@ -122,7 +123,7 @@ impl DAG {
         }
     }
 
-    fn topological_sort(&self) -> impl Iterator<Item=usize> {
+    fn topological_sort(&self) -> impl Iterator<Item = usize> {
         // Assumes nodes are never deleted, so numberic order is toplogical
         let mut set: BTreeSet<usize> = BTreeSet::new();
         let mut queue: VecDeque<usize> = VecDeque::new();
@@ -130,8 +131,8 @@ impl DAG {
         queue.extend(self.terminals.values().cloned());
         while let Some(i) = queue.pop_front() {
             match self.nodes[i] {
-                Value::Tape(_) => {},
-                Value::Const(_) => {},
+                Value::Tape(_) => {}
+                Value::Const(_) => {}
                 Value::Multiply(a, b) => {
                     if !set.contains(&a) {
                         queue.push_back(a);
@@ -141,7 +142,7 @@ impl DAG {
                         queue.push_back(b);
                         set.insert(b);
                     }
-                },
+                }
                 Value::Add(a, b) => {
                     if !set.contains(&a) {
                         queue.push_back(a);
