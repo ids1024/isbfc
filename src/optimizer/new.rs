@@ -281,7 +281,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.jp(endlabel.clone());
                 state.lir.label(startlabel.clone());
 
-                ir_to_lir_iter(state, ir);
+                ir_to_lir_iter(state, inner);
                 state.lir.shift(*end_shift);
 
                 state.lir.label(endlabel.clone());
