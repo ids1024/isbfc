@@ -3,6 +3,8 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
+use std::collections::BTreeSet;
+use std::collections::VecDeque;
 use std::fmt;
 
 use super::Optimizer;
@@ -118,6 +120,41 @@ impl DAG {
                 *i = Value::Tape(offset + shift);
             }
         }
+    }
+
+    fn topological_sort(&self) -> impl Iterator<Item=usize> {
+        // Assumes nodes are never deleted, so numberic order is toplogical
+        let mut set: BTreeSet<usize> = BTreeSet::new();
+        let mut queue: VecDeque<usize> = VecDeque::new();
+        set.extend(self.terminals.values().cloned());
+        queue.extend(self.terminals.values().cloned());
+        while let Some(i) = queue.pop_front() {
+            match self.nodes[i] {
+                Value::Tape(_) => {},
+                Value::Const(_) => {},
+                Value::Multiply(a, b) => {
+                    if !set.contains(&a) {
+                        queue.push_back(a);
+                        set.insert(a);
+                    }
+                    if !set.contains(&b) {
+                        queue.push_back(b);
+                        set.insert(b);
+                    }
+                },
+                Value::Add(a, b) => {
+                    if !set.contains(&a) {
+                        queue.push_back(a);
+                        set.insert(a);
+                    }
+                    if !set.contains(&b) {
+                        queue.push_back(b);
+                        set.insert(b);
+                    }
+                }
+            }
+        }
+        set.into_iter()
     }
     //fn append(&mut self, expr: CalcExpr);
     //fn simplify(&mut self);
@@ -251,7 +288,32 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.label(endlabel.clone());
                 state.lir.jnz(Tape(*offset), startlabel.clone());
             }
-            IR::Expr(expr) => for (offset, value) in &expr.terminals {},
+            IR::Expr(expr) => {
+                let mut map = HashMap::new();
+
+                for i in expr.topological_sort() {
+                    let reg = state.reg();
+                    map.insert(i, reg);
+                    match expr.nodes[i] {
+                        Value::Tape(offset) => {
+                            state.lir.mov(Reg(reg), Tape(offset));
+                        }
+                        Value::Const(value) => {
+                            state.lir.mov(Reg(reg), Immediate(value));
+                        }
+                        Value::Multiply(a, b) => {
+                            state.lir.mul(Reg(reg), Reg(map[&a]), Reg(map[&b]));
+                        }
+                        Value::Add(a, b) => {
+                            state.lir.add(Reg(reg), Reg(map[&a]), Reg(map[&b]));
+                        }
+                    }
+                }
+
+                for (k, v) in &expr.terminals {
+                    state.lir.mov(Tape(*k), Reg(map[v]));
+                }
+            }
         }
     }
 
