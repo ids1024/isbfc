@@ -126,13 +126,13 @@ impl Options {
     }
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     let options = Options::match_options();
 
     let name = options.input.rsplitn(2, '.').last().unwrap();
-    let mut file = File::open(&options.input).unwrap();
+    let mut file = File::open(&options.input)?;
     let mut code = Vec::new();
-    file.read_to_end(&mut code).unwrap();
+    file.read_to_end(&mut code)?;
 
     let ast = match isbfc::parse(&code) {
         Ok(ast) => ast,
@@ -147,36 +147,36 @@ fn main() {
     match options.action {
         Action::DumpIr => {
             let out_name = options.get_output("-");
-            let mut irfile = open_output_file(out_name).unwrap();
-            options.optimizer.dumpir(&ast, options.level, &mut irfile).unwrap();
+            let mut irfile = open_output_file(out_name)?;
+            options.optimizer.dumpir(&ast, options.level, &mut irfile)?;
         }
         Action::DumpLir => {
             let out_name = options.get_output("-");
-            let mut lirfile = open_output_file(out_name).unwrap();
+            let mut lirfile = open_output_file(out_name)?;
             for i in lir {
-                writeln!(lirfile, "{:?}", i).unwrap();
+                writeln!(lirfile, "{:?}", i)?;
             }
         }
         Action::OutputAssembly => {
             println!("Compiling...");
-            let output = compile(lir, options.tape_size);
+            let output = compile(lir, options.tape_size)?;
             let def_name = format!("{}.s", name);
             let out_name = options.get_output(&def_name);
-            let mut asmfile = open_output_file(out_name).unwrap();
-            asmfile.write_all(&output.into_bytes()).unwrap();
+            let mut asmfile = open_output_file(out_name)?;
+            asmfile.write_all(&output.into_bytes())?;
         }
         Action::Compile => {
             println!("Compiling...");
-            let output = compile(lir, options.tape_size);
+            let output = compile(lir, options.tape_size)?;
             let out_name = options.get_output(name);
             asm_and_link(&output, &name, &out_name, options.debug, options.minimal_elf);
         }
     }
+
+    Ok(())
 }
 
-pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> String {
-    // TODO: avoid unwrap
-
+pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> io::Result<String> {
     let c = codegen(&lir, CellType::U64, tape_size);
 
     let mut child = Command::new("gcc")
@@ -188,24 +188,22 @@ pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> String {
         .arg("-") // Standard input
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
+        .spawn()?;
 
-    child.stdin.take().unwrap().write_all(c.as_bytes()).unwrap();
+    child.stdin.take().unwrap().write_all(c.as_bytes())?;
 
     let mut code = String::new();
     child
         .stdout
         .take()
         .unwrap()
-        .read_to_string(&mut code)
-        .unwrap();
+        .read_to_string(&mut code)?;
 
-    if !child.wait().unwrap().success() {
+    if !child.wait()?.success() {
         process::exit(1);
     }
 
-    code
+    Ok(code)
 }
 
 fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {
