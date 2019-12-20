@@ -125,6 +125,7 @@ impl DAG {
 
     fn topological_sort(&self) -> impl Iterator<Item = usize> {
         // Assumes nodes are never deleted, so numberic order is toplogical
+        /*
         let mut set: BTreeSet<usize> = BTreeSet::new();
         let mut queue: VecDeque<usize> = VecDeque::new();
         set.extend(self.terminals.values().cloned());
@@ -145,6 +146,9 @@ impl DAG {
             }
         }
         set.into_iter()
+        */
+        // TODO: doesn't skip unneeded nodes
+        0..self.nodes.len()
     }
     //fn append(&mut self, expr: CalcExpr);
     //fn simplify(&mut self);
@@ -172,6 +176,7 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
             AST::Output => {
                 ir.push(IR::Expr(expr.clone()));
                 expr.clear();
+                ir.push(IR::Output(shift));
             }
             AST::Loop(body) => {
                 let (loop_body, loop_shift) = optimize_expr(body, expr.clone());
@@ -186,6 +191,7 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
                 ir.push(IR::Expr(expr.clone()));
                 expr.clear();
                 expr.zeroed = false;
+                shift = 0;
                 ir.push(IR::Loop(shift, loop_body, loop_shift));
             }
             AST::Right => {
