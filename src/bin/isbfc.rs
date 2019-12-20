@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::process::{self, Command, Stdio};
 
 use clap::{App, Arg, ArgGroup};
@@ -107,31 +107,21 @@ fn main() {
     let lir = optimizer.optimize(&ast, level);
 
     if matches.is_present("dump_ir") {
-        if let Some(out_name) = matches.value_of("out_name") {
-            let mut irfile = File::create(out_name).unwrap();
-            optimizer.dumpir(&ast, level, &mut irfile).unwrap();
-        } else {
-            optimizer
-                .dumpir(&ast, level, &mut std::io::stdout())
-                .unwrap();
-        };
+        let out_name = matches.value_of("out_name").unwrap_or("-");
+        let mut irfile = open_output_file(out_name).unwrap();
+        optimizer.dumpir(&ast, level, &mut irfile).unwrap();
     } else if matches.is_present("dump_lir") {
-        if let Some(out_name) = matches.value_of("out_name") {
-            let mut irfile = File::create(out_name).unwrap();
-            for i in lir {
-                writeln!(irfile, "{:?}", i).unwrap();
-            }
-        } else {
-            for i in lir {
-                println!("{:?}", i);
-            }
-        };
+        let out_name = matches.value_of("out_name").unwrap_or("-");
+        let mut lirfile = open_output_file(out_name).unwrap();
+        for i in lir {
+            writeln!(lirfile, "{:?}", i).unwrap();
+        }
     } else if matches.is_present("output_asm") {
         println!("Compiling...");
         let output = compile(lir, tape_size);
         let def_name = format!("{}.s", name);
         let out_name = matches.value_of("out_name").unwrap_or(&def_name);
-        let mut asmfile = File::create(out_name).unwrap();
+        let mut asmfile = open_output_file(out_name).unwrap();
         asmfile.write_all(&output.into_bytes()).unwrap();
     } else {
         println!("Compiling...");
@@ -190,5 +180,13 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bo
 
     if isbfc::link(&o_name, out_name, minimal).unwrap() != Some(0) {
         process::exit(1);
+    }
+}
+
+fn open_output_file(name: &str) -> io::Result<Box<dyn Write>> {
+    if name == "-" {
+        Ok(Box::new(io::stdout()))
+    } else {
+        Ok(Box::new(File::create(&name)?))
     }
 }
