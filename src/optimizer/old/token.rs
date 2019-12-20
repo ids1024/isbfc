@@ -73,10 +73,8 @@ pub fn ast_to_tokens(ast: &[AST]) -> Vec<Token> {
             }
             AST::Input => tokens.push(Token::Input),
             AST::Loop(inner) => tokens.push(Token::Loop(ast_to_tokens(inner))),
-            AST::Right => tokens.push(Token::Move(1)),
-            AST::Left => tokens.push(Token::Move(-1)),
-            AST::Inc => tokens.push(Token::Add(0, 1)),
-            AST::Dec => tokens.push(Token::Add(0, -1)),
+            AST::Shift(offset) => tokens.push(Token::Move(*offset)),
+            AST::Add(add) => tokens.push(Token::Add(0, *add)),
         }
     }
     tokens

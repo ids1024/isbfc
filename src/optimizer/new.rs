@@ -194,17 +194,11 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
                 shift = 0;
                 ir.push(IR::Loop(shift, loop_body, loop_shift));
             }
-            AST::Right => {
-                shift += 1;
+            AST::Shift(offset) => {
+                shift += offset;
             }
-            AST::Left => {
-                shift -= 1;
-            }
-            AST::Inc => {
-                expr.add(shift, Value::Const(1));
-            }
-            AST::Dec => {
-                expr.add(shift, Value::Const(-1));
+            AST::Add(add) => {
+                expr.add(shift, Value::Const(*add));
             }
         }
     }

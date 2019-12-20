@@ -50,13 +50,9 @@ fn ast_to_ir(ast: &[AST]) -> Vec<SimpleAddIR> {
                 shift = 0;
                 ir.push(SimpleAddIR::Loop(ast_to_ir(inner)));
             }
-            AST::Right => { shift += 1; }
-            AST::Left => { shift -= 1; }
-            AST::Inc => {
-                *adds.entry(shift).or_insert(0) += 1;
-            }
-            AST::Dec => {
-                *adds.entry(shift).or_insert(0) -= 1;
+            AST::Shift(offset) => { shift += offset; }
+            AST::Add(add) => {
+                *adds.entry(shift).or_insert(0) += *add;
             }
         }
     }

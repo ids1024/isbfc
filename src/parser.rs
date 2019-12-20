@@ -7,10 +7,8 @@ pub enum AST {
     Output,
     Input,
     Loop(Vec<AST>),
-    Right,
-    Left,
-    Inc,
-    Dec,
+    Add(i32),
+    Shift(i32),
 }
 
 #[derive(Debug)]
@@ -78,17 +76,34 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<AST>, ParseError
     // Starting [ of the loop
     let start = i.saturating_sub(1);
 
+    let mut shift = 0;
+    let mut add = 0;
+
     let mut tokens = Vec::new();
     while let Some(c) = code.get(*i) {
         *i += 1;
 
+        if shift != 0 && !b"><".contains(c) {
+            tokens.push(AST::Shift(shift));
+            shift = 0;
+        } else if add != 0 && !b"+-".contains(c) {
+            tokens.push(AST::Add(add));
+            add = 0;
+        }
+
         match c {
-            b'+' => tokens.push(AST::Inc),
-            b'-' => tokens.push(AST::Dec),
-            b'>' => tokens.push(AST::Right),
-            b'<' => tokens.push(AST::Left),
+            b'+' => { add += 1; },
+            b'-' => { add -= 1; },
+            b'>' => { shift += 1; },
+            b'<' => { shift -= 1; },
             b'[' => tokens.push(AST::Loop(_parse(code, i, level + 1)?)),
             b']' => {
+                if shift != 0 {
+                    tokens.push(AST::Shift(shift));
+                } else if add != 0 {
+                    tokens.push(AST::Add(add));
+                }
+
                 return if level == 0 {
                     Err(ParseError::new(ExtraCloseLoop, code, *i - 1))
                 } else {

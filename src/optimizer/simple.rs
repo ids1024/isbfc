@@ -50,17 +50,11 @@ fn optimize(ast: &[AST], level: u32, loopnum: &mut u32, lir: &mut LIRBuilder) {
                 lir.label(endlabel.clone());
                 lir.jnz(Tape(0), startlabel.clone());
             }
-            AST::Right => {
-                lir.shift(1);
+            AST::Shift(offset) => {
+                lir.shift(*offset);
             }
-            AST::Left => {
-                lir.shift(-1);
-            }
-            AST::Inc => {
-                lir.add(Tape(0), Tape(0), Immediate(1));
-            }
-            AST::Dec => {
-                lir.add(Tape(0), Tape(0), Immediate(-1));
+            AST::Add(add) => {
+                lir.add(Tape(0), Tape(0), Immediate(*add));
             }
         }
     }
