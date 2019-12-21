@@ -92,10 +92,18 @@ fn _parse(code: &[u8], i: &mut usize, level: u32) -> Result<Vec<AST>, ParseError
         }
 
         match c {
-            b'+' => { add += 1; },
-            b'-' => { add -= 1; },
-            b'>' => { shift += 1; },
-            b'<' => { shift -= 1; },
+            b'+' => {
+                add += 1;
+            }
+            b'-' => {
+                add -= 1;
+            }
+            b'>' => {
+                shift += 1;
+            }
+            b'<' => {
+                shift -= 1;
+            }
             b'[' => tokens.push(AST::Loop(_parse(code, i, level + 1)?)),
             b']' => {
                 if shift != 0 {

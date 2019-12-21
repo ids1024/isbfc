@@ -5,7 +5,7 @@ use std::process::{self, Command, Stdio};
 use clap::{App, Arg, ArgGroup};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
-use isbfc::{OPTIMIZERS, Optimizer};
+use isbfc::{Optimizer, OPTIMIZERS};
 
 enum Action {
     Compile,
@@ -106,22 +106,28 @@ impl Options {
             Action::Compile
         };
 
-         Options {
+        Options {
             action,
             output: matches.value_of("out_name").map(str::to_string),
             input: matches.value_of("FILENAME").unwrap().to_string(),
-            tape_size: matches.value_of("tape_size").unwrap().parse::<i32>().unwrap(),
+            tape_size: matches
+                .value_of("tape_size")
+                .unwrap()
+                .parse::<i32>()
+                .unwrap(),
             level: matches.value_of("level").unwrap().parse::<u32>().unwrap(),
             debug: matches.is_present("debugging_symbols"),
             minimal_elf: matches.is_present("minimal_elf"),
-            optimizer: *OPTIMIZERS.get(matches.value_of("optimizer").unwrap()).unwrap()
+            optimizer: *OPTIMIZERS
+                .get(matches.value_of("optimizer").unwrap())
+                .unwrap(),
         }
     }
 
     fn get_output<'a>(&'a self, default: &'a str) -> &'a str {
         match self.output.as_ref() {
             Some(output) => output,
-            None => default
+            None => default,
         }
     }
 }
@@ -169,7 +175,13 @@ fn main() -> io::Result<()> {
             println!("Compiling...");
             let output = compile(lir, options.tape_size)?;
             let out_name = options.get_output(name);
-            asm_and_link(&output, &name, &out_name, options.debug, options.minimal_elf);
+            asm_and_link(
+                &output,
+                &name,
+                &out_name,
+                options.debug,
+                options.minimal_elf,
+            );
         }
     }
 
@@ -193,11 +205,7 @@ pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> io::Result<String> 
     child.stdin.take().unwrap().write_all(c.as_bytes())?;
 
     let mut code = String::new();
-    child
-        .stdout
-        .take()
-        .unwrap()
-        .read_to_string(&mut code)?;
+    child.stdout.take().unwrap().read_to_string(&mut code)?;
 
     if !child.wait()?.success() {
         process::exit(1);

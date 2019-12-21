@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use super::Optimizer;
 use crate::{LIRBuilder, AST, LIR};
+use std::collections::HashMap;
 use std::io::Write;
 use std::mem;
 
@@ -50,7 +50,9 @@ fn ast_to_ir(ast: &[AST]) -> Vec<SimpleAddIR> {
                 shift = 0;
                 ir.push(SimpleAddIR::Loop(ast_to_ir(inner)));
             }
-            AST::Shift(offset) => { shift += offset; }
+            AST::Shift(offset) => {
+                shift += offset;
+            }
             AST::Add(add) => {
                 *adds.entry(shift).or_insert(0) += *add;
             }
@@ -103,7 +105,9 @@ fn _ir_to_lir(ir: &[SimpleAddIR], state: &mut CompileState) {
             }
             SimpleAddIR::Adds(adds) => {
                 for (offset, value) in adds {
-                    state.lir.add(Tape(*offset), Tape(*offset), Immediate(*value));
+                    state
+                        .lir
+                        .add(Tape(*offset), Tape(*offset), Immediate(*value));
                 }
             }
             SimpleAddIR::Shift(shift) => {
