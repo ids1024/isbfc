@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 use unicode_width::UnicodeWidthStr;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum AST {
     Output,
     Input,

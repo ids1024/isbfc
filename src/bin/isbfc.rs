@@ -10,6 +10,7 @@ use isbfc::{Optimizer, OPTIMIZERS};
 enum Action {
     Compile,
     OutputAssembly,
+    DumpAst,
     DumpIr,
     DumpLir,
 }
@@ -37,6 +38,11 @@ impl Options {
                     .help("Assemble but do not link"),
             )
             .arg(
+                Arg::with_name("dump_ast")
+                    .long("dump-ast")
+                    .help("Dump AST; for debugging"),
+            )
+            .arg(
                 Arg::with_name("dump_ir")
                     .long("dump-ir")
                     .help("Dump intermediate representation; for debugging"),
@@ -46,7 +52,12 @@ impl Options {
                     .long("dump-lir")
                     .help("Dump low level intermediate representation; for debugging"),
             )
-            .group(ArgGroup::with_name("actions").args(&["output_asm", "dump_ir", "dump_lir"]))
+            .group(ArgGroup::with_name("actions").args(&[
+                "output_asm",
+                "dump_ast",
+                "dump_ir",
+                "dump_lir",
+            ]))
             .arg(
                 Arg::with_name("debugging_symbols")
                     .short("g")
@@ -98,6 +109,8 @@ impl Options {
 
         let action = if matches.is_present("dump_ir") {
             Action::DumpIr
+        } else if matches.is_present("dump_ast") {
+            Action::DumpAst
         } else if matches.is_present("dump_lir") {
             Action::DumpLir
         } else if matches.is_present("output_asm") {
@@ -151,16 +164,20 @@ fn main() -> io::Result<()> {
     let lir = options.optimizer.optimize(&ast, options.level);
 
     match options.action {
+        Action::DumpAst => {
+            let mut outfile = open_output_file(options.get_output("-"))?;
+            writeln!(outfile, "{:#?}", ast)?;
+        }
         Action::DumpIr => {
-            let out_name = options.get_output("-");
-            let mut irfile = open_output_file(out_name)?;
-            options.optimizer.dumpir(&ast, options.level, &mut irfile)?;
+            let mut outfile = open_output_file(options.get_output("-"))?;
+            options
+                .optimizer
+                .dumpir(&ast, options.level, &mut outfile)?;
         }
         Action::DumpLir => {
-            let out_name = options.get_output("-");
-            let mut lirfile = open_output_file(out_name)?;
+            let mut outfile = open_output_file(options.get_output("-"))?;
             for i in lir {
-                writeln!(lirfile, "{:?}", i)?;
+                writeln!(outfile, "{:?}", i)?;
             }
         }
         Action::OutputAssembly => {
