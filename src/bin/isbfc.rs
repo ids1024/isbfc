@@ -143,6 +143,15 @@ impl Options {
             None => default,
         }
     }
+
+    fn open_output_file(&self, default: &str) -> io::Result<Box<dyn Write>> {
+        let name = self.get_output(self.get_output(default));
+        if name == "-" {
+            Ok(Box::new(io::stdout()))
+        } else {
+            Ok(Box::new(File::create(&name)?))
+        }
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -165,17 +174,17 @@ fn main() -> io::Result<()> {
 
     match options.action {
         Action::DumpAst => {
-            let mut outfile = open_output_file(options.get_output("-"))?;
+            let mut outfile = options.open_output_file("-")?;
             writeln!(outfile, "{:#?}", ast)?;
         }
         Action::DumpIr => {
-            let mut outfile = open_output_file(options.get_output("-"))?;
+            let mut outfile = options.open_output_file("-")?;
             options
                 .optimizer
                 .dumpir(&ast, options.level, &mut outfile)?;
         }
         Action::DumpLir => {
-            let mut outfile = open_output_file(options.get_output("-"))?;
+            let mut outfile = options.open_output_file("-")?;
             for i in lir {
                 writeln!(outfile, "{:?}", i)?;
             }
@@ -184,8 +193,7 @@ fn main() -> io::Result<()> {
             println!("Compiling...");
             let output = compile(lir, options.tape_size)?;
             let def_name = format!("{}.s", name);
-            let out_name = options.get_output(&def_name);
-            let mut asmfile = open_output_file(out_name)?;
+            let mut asmfile = options.open_output_file(&def_name)?;
             asmfile.write_all(&output.into_bytes())?;
         }
         Action::Compile => {
@@ -244,13 +252,5 @@ fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bo
 
     if isbfc::link(&o_name, out_name, minimal).unwrap() != Some(0) {
         process::exit(1);
-    }
-}
-
-fn open_output_file(name: &str) -> io::Result<Box<dyn Write>> {
-    if name == "-" {
-        Ok(Box::new(io::stdout()))
-    } else {
-        Ok(Box::new(File::create(&name)?))
     }
 }
