@@ -15,7 +15,7 @@ pub use simple_add::SimpleAddOptimizer;
 
 pub trait Optimizer: Sync {
     fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR>;
-    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())>;
+    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<()>;
 }
 
 lazy_static! {

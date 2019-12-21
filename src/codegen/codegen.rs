@@ -1,5 +1,7 @@
 // XXX: WIP, not usable
 
+#![allow(dead_code, unused_variables)]
+
 use crate::lir::{CowStr, LIR};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter, Write};

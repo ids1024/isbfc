@@ -16,7 +16,7 @@ impl Optimizer for SimpleOptimizer {
         lir.build()
     }
 
-    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<(())> {
+    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<()> {
         // Optimizer lacks its own IR, so dump LIR
         writeln!(file, "{:#?}", self.optimize(ast, level))
     }

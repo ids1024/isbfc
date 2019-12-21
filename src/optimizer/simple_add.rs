@@ -7,11 +7,11 @@ use std::mem;
 pub struct SimpleAddOptimizer;
 
 impl Optimizer for SimpleAddOptimizer {
-    fn optimize(&self, ast: &[AST], level: u32) -> Vec<LIR> {
+    fn optimize(&self, ast: &[AST], _level: u32) -> Vec<LIR> {
         ir_to_lir(&ast_to_ir(ast))
     }
 
-    fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<()> {
+    fn dumpir(&self, ast: &[AST], _level: u32, file: &mut dyn Write) -> std::io::Result<()> {
         writeln!(file, "{:#?}", ast_to_ir(ast))
     }
 }
