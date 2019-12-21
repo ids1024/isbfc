@@ -152,6 +152,48 @@ impl Options {
             Ok(Box::new(File::create(&name)?))
         }
     }
+
+    fn compile(&self, lir: Vec<isbfc::lir::LIR>) -> io::Result<String> {
+        let c = codegen(&lir, CellType::U64, self.tape_size);
+
+        let mut child = Command::new("gcc")
+            .arg("-x")
+            .arg("c")
+            .arg("-S")
+            .arg("-o")
+            .arg("-") // Standard output
+            .arg("-") // Standard input
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?;
+
+        child.stdin.take().unwrap().write_all(c.as_bytes())?;
+
+        let mut code = String::new();
+        child.stdout.take().unwrap().read_to_string(&mut code)?;
+
+        if !child.wait()?.success() {
+            process::exit(1);
+        }
+
+        Ok(code)
+    }
+
+    fn asm_and_link(&self, code: &str, name: &str, out_name: &str) {
+        let o_name = format!("{}.o", name);
+
+        println!("Assembling...");
+
+        if isbfc::assemble(code, &o_name, self.debug).unwrap() != Some(0) {
+            process::exit(1);
+        }
+
+        println!("Linking...");
+
+        if isbfc::link(&o_name, out_name, self.minimal_elf).unwrap() != Some(0) {
+            process::exit(1);
+        }
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -191,66 +233,18 @@ fn main() -> io::Result<()> {
         }
         Action::OutputAssembly => {
             println!("Compiling...");
-            let output = compile(lir, options.tape_size)?;
+            let output = options.compile(lir)?;
             let def_name = format!("{}.s", name);
             let mut asmfile = options.open_output_file(&def_name)?;
             asmfile.write_all(&output.into_bytes())?;
         }
         Action::Compile => {
             println!("Compiling...");
-            let output = compile(lir, options.tape_size)?;
+            let output = options.compile(lir)?;
             let out_name = options.get_output(name);
-            asm_and_link(
-                &output,
-                &name,
-                &out_name,
-                options.debug,
-                options.minimal_elf,
-            );
+            options.asm_and_link(&output, &name, &out_name);
         }
     }
 
     Ok(())
-}
-
-pub fn compile(lir: Vec<isbfc::lir::LIR>, tape_size: i32) -> io::Result<String> {
-    let c = codegen(&lir, CellType::U64, tape_size);
-
-    let mut child = Command::new("gcc")
-        .arg("-x")
-        .arg("c")
-        .arg("-S")
-        .arg("-o")
-        .arg("-") // Standard output
-        .arg("-") // Standard input
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-
-    child.stdin.take().unwrap().write_all(c.as_bytes())?;
-
-    let mut code = String::new();
-    child.stdout.take().unwrap().read_to_string(&mut code)?;
-
-    if !child.wait()?.success() {
-        process::exit(1);
-    }
-
-    Ok(code)
-}
-
-fn asm_and_link(code: &str, name: &str, out_name: &str, debug: bool, minimal: bool) {
-    let o_name = format!("{}.o", name);
-
-    println!("Assembling...");
-
-    if isbfc::assemble(code, &o_name, debug).unwrap() != Some(0) {
-        process::exit(1);
-    }
-
-    println!("Linking...");
-
-    if isbfc::link(&o_name, out_name, minimal).unwrap() != Some(0) {
-        process::exit(1);
-    }
 }
