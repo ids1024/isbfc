@@ -104,9 +104,17 @@ impl DAG {
         }
     }
 
-    fn add(&mut self, offset: i32, value: Value) {
+    fn add(&mut self, offset: i32, value: i32) {
         let old_node = self.get_node(offset);
-        let new_node = self.add_node(value);
+        // Combine with existing add of constant
+        if let Value::Add(lhs, rhs) = self.nodes[old_node] {
+            if let Value::Const(old_value) = self.nodes[rhs] {
+                let new_node = self.add_node(Value::Const(old_value + value));
+                self.set(offset, Value::Add(lhs, new_node));
+                return;
+            }
+        }
+        let new_node = self.add_node(Value::Const(value));
         self.set(offset, Value::Add(old_node, new_node));
     }
 
@@ -198,7 +206,7 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
                 shift += offset;
             }
             AST::Add(add) => {
-                expr.add(shift, Value::Const(*add));
+                expr.add(shift, *add);
             }
         }
     }
