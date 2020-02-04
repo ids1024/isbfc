@@ -191,8 +191,8 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
                 ir.push(IR::Expr(expr.clone()));
                 expr.clear();
                 expr.zeroed = false;
-                shift = 0;
                 ir.push(IR::Loop(shift, loop_body, loop_shift));
+                shift = 0;
             }
             AST::Shift(offset) => {
                 shift += offset;
@@ -266,6 +266,8 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                     outbuffpos = 0;
                 }
 
+                state.lir.shift(*offset);
+
                 state.loopnum += 1;
                 let startlabel = format!("loop{}", state.loopnum);
                 let endlabel = format!("endloop{}", state.loopnum);
@@ -276,7 +278,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.shift(*end_shift);
 
                 state.lir.label(endlabel.clone());
-                state.lir.jnz(Tape(*offset), startlabel.clone());
+                state.lir.jnz(Tape(0), startlabel.clone());
             }
             IR::Expr(expr) => {
                 let mut map = HashMap::new();
