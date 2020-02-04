@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap, VecDeque, HashSet};
 use std::fmt;
 
 use super::Optimizer;
@@ -23,7 +23,7 @@ impl Optimizer for NewOptimizer {
     }
 }
 
-#[derive(Clone, Copy, Hash)]
+#[derive(Clone, Copy, Hash, PartialEq, Debug)]
 enum Value {
     Tape(i32),
     Const(i32),
@@ -31,6 +31,7 @@ enum Value {
     Add(usize, usize),
 }
 
+/*
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -50,6 +51,7 @@ impl fmt::Debug for Value {
         Ok(())
     }
 }
+*/
 
 // TODO: try adding HashMap<Value, usize> for reverse node lookup;
 // see if this helps for efficiency.
@@ -118,6 +120,12 @@ impl DAG {
         self.set(offset, Value::Add(old_node, new_node));
     }
 
+    fn mul(&mut self, offset: i32, value: Value) {
+        let old_node = self.get_node(offset);
+        let new_node = self.add_node(value);
+        self.set(offset, Value::Multiply(old_node, new_node));
+    }
+
     fn clear(&mut self) {
         self.nodes.clear();
         self.terminals.clear();
@@ -160,6 +168,26 @@ impl DAG {
     }
     //fn append(&mut self, expr: CalcExpr);
     //fn simplify(&mut self);
+    // TODO efficiency
+    fn dependencies(&self, node: usize) -> HashSet<i32> {
+        fn dependencies_iter(dag: &DAG, set: &mut HashSet<i32>, node: usize) {
+            match dag.nodes[node] {
+                Value::Tape(offset) => { set.insert(offset); },
+                Value::Const(_) => {},
+                Value::Multiply(l, r) => {
+                    dependencies_iter(dag, set, l);
+                    dependencies_iter(dag, set, r);
+                },
+                Value::Add(l, r) => {
+                    dependencies_iter(dag, set, l);
+                    dependencies_iter(dag, set, r);
+                }
+            }
+        }
+        let mut set = HashSet::new();
+        dependencies_iter(self, &mut set, node);
+        set
+    }
 }
 
 #[derive(Debug)]
@@ -173,7 +201,8 @@ enum IR {
 fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
     let mut ir = Vec::new();
 
-    let mut expr = DAG::new(outside_expr.zeroed);
+    // TODO zeroing
+    let mut expr = DAG::new(false);
     let mut shift = 0;
     for i in body {
         match i {
@@ -188,14 +217,18 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
             }
             AST::Loop(body) => {
                 let (loop_body, loop_shift) = optimize_expr(body, expr.clone());
-                /*
                 if loop_body.len() == 1 && shift == 0 {
                     if let IR::Expr(ref loop_expr) = loop_body[0] {
-                        expr.append(optimize_expr_loop(loop_expr.clone()));
-                        continue;
+                        if let Some(new_expr) = optimize_expr_loop(shift, loop_expr.clone()) {
+                            // TODO append to existing expr
+                            ir.push(IR::Expr(expr.clone()));
+                            expr.clear();
+                            expr.zeroed = false;
+                            expr = new_expr;
+                            continue;
+                        }
                     }
                 }
-                */
                 ir.push(IR::Expr(expr.clone()));
                 expr.clear();
                 expr.zeroed = false;
@@ -216,19 +249,31 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
     (ir, shift)
 }
 
-/*
-fn optimize_expr_loop(body_expr: DAG) -> DAG {
-    let val = body_expr.get(0);
-    // Only works when adding const to tape[0]?
-    // Total number of iterations:
-    //    Value::Tape(0) -
-    // TODO: Detect infinite loop
-    for (_offset, _value) in &body_expr.map {
-        //outside_expr.set(offset,
+// Given a loop with no end shift, where the body is a single DAG, 
+// if possible optimize such that the loop is replaced with a flat
+// DAG.
+fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {
+    let mut expr = DAG::new(false);
+    for (k, v) in &body_expr.terminals {
+        if *k == shift {
+            if let Value::Add(lhs, rhs) = body_expr.nodes[*v] {
+                if body_expr.nodes[lhs] != Value::Tape(shift) ||
+                   body_expr.nodes[rhs] != Value::Const(-1) {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        } else {
+            if !body_expr.dependencies(*v).is_empty() {
+                return None;
+            }
+            expr.mul(*k, Value::Tape(shift));
+        }
     }
-    body_expr // FIXME
+    expr.set(shift, Value::Const(0));
+    Some(expr)
 }
-*/
 
 #[derive(Default)]
 struct CompileState {
