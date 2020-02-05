@@ -249,27 +249,37 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
     (ir, shift)
 }
 
+fn is_dec_one(shift: i32, body_expr: &DAG) -> bool {
+    if let Some(node) = body_expr.terminals.get(&shift) {
+        if let Value::Add(lhs, rhs) = body_expr.nodes[*node] {
+            if body_expr.nodes[lhs] == Value::Tape(shift) &&
+               body_expr.nodes[rhs] == Value::Const(-1) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 // Given a loop with no end shift, where the body is a single DAG, 
 // if possible optimize such that the loop is replaced with a flat
 // DAG.
 fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {
+    if !is_dec_one(shift, &body_expr) {
+        return None;
+    }
+
     let mut expr = body_expr.clone();
     for (k, v) in &body_expr.terminals {
         if *k == shift {
-            if let Value::Add(lhs, rhs) = body_expr.nodes[*v] {
-                if body_expr.nodes[lhs] != Value::Tape(shift) ||
-                   body_expr.nodes[rhs] != Value::Const(-1) {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-        } else {
-            if !body_expr.dependencies(*v).is_empty() {
-                return None;
-            }
-            expr.mul(*k, Value::Tape(shift));
+            continue;
         }
+
+        if !body_expr.dependencies(*v).is_empty() {
+            return None;
+        }
+
+        expr.mul(*k, Value::Tape(shift));
     }
     expr.set(shift, Value::Const(0));
     Some(expr)
