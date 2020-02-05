@@ -253,7 +253,7 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
 // if possible optimize such that the loop is replaced with a flat
 // DAG.
 fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {
-    let mut expr = DAG::new(false);
+    let mut expr = body_expr.clone();
     for (k, v) in &body_expr.terminals {
         if *k == shift {
             if let Value::Add(lhs, rhs) = body_expr.nodes[*v] {
