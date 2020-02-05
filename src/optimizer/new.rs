@@ -166,8 +166,34 @@ impl DAG {
         // TODO: doesn't skip unneeded nodes
         0..self.nodes.len()
     }
-    //fn append(&mut self, expr: CalcExpr);
+
+    fn extend(&mut self, mut expr: DAG) {
+        for i in expr.terminals.values_mut() {
+            *i += self.nodes.len();
+        }
+
+        for i in &mut expr.nodes {
+            match i {
+                Value::Tape(offset) => {
+                    if let Some(node) = self.terminals.get(offset) {
+                        // XXX
+                        *i = self.nodes[*node];
+                    }
+                }
+                Value::Const(_) => {},
+                Value::Add(lhs, rhs) | Value::Multiply(lhs, rhs) => {
+                    *lhs += self.nodes.len();
+                    *rhs += self.nodes.len();
+                }
+            }
+        }
+
+        self.terminals.extend(expr.terminals);
+        self.nodes.extend(expr.nodes);
+    }
+
     //fn simplify(&mut self);
+
     // TODO efficiency
     fn dependencies(&self, node: usize) -> HashSet<i32> {
         fn dependencies_iter(dag: &DAG, set: &mut HashSet<i32>, node: usize) {
@@ -220,11 +246,7 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
                 if loop_body.len() == 1 && shift == 0 {
                     if let IR::Expr(ref loop_expr) = loop_body[0] {
                         if let Some(new_expr) = optimize_expr_loop(shift, loop_expr.clone()) {
-                            // TODO append to existing expr
-                            ir.push(IR::Expr(expr.clone()));
-                            expr.clear();
-                            expr.zeroed = false;
-                            expr = new_expr;
+                            expr.extend(new_expr);
                             continue;
                         }
                     }
