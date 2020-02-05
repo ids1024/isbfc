@@ -141,28 +141,6 @@ impl DAG {
 
     fn topological_sort(&self) -> impl Iterator<Item = usize> {
         // Assumes nodes are never deleted, so numberic order is toplogical
-        /*
-        let mut set: BTreeSet<usize> = BTreeSet::new();
-        let mut queue: VecDeque<usize> = VecDeque::new();
-        set.extend(self.terminals.values().cloned());
-        queue.extend(self.terminals.values().cloned());
-        while let Some(i) = queue.pop_front() {
-            match self.nodes[i] {
-                Value::Multiply(a, b) | Value::Add(a, b) => {
-                    if !set.contains(&a) {
-                        queue.push_back(a);
-                        set.insert(a);
-                    }
-                    if !set.contains(&b) {
-                        queue.push_back(b);
-                        set.insert(b);
-                    }
-                }
-                Value::Tape(_) | Value::Const(_) => {}
-            }
-        }
-        set.into_iter()
-        */
         // TODO: doesn't skip unneeded nodes
         0..self.nodes.len()
     }
