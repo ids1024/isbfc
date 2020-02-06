@@ -250,12 +250,10 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
 }
 
 fn is_dec_one(shift: i32, body_expr: &DAG) -> bool {
-    if let Some(node) = body_expr.terminals.get(&shift) {
-        if let Value::Add(lhs, rhs) = body_expr.nodes[*node] {
-            if body_expr.nodes[lhs] == Value::Tape(shift) &&
-               body_expr.nodes[rhs] == Value::Const(-1) {
-                return true;
-            }
+    if let Value::Add(lhs, rhs) = body_expr.get(shift) {
+        if body_expr.nodes[lhs] == Value::Tape(shift) &&
+           body_expr.nodes[rhs] == Value::Const(-1) {
+            return true;
         }
     }
     false
