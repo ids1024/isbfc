@@ -82,15 +82,14 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
 
 fn is_dec_one(shift: i32, body_expr: &DAG) -> bool {
     if let Value::Add(lhs, rhs) = body_expr.get(shift) {
-        if body_expr[lhs] == Value::Tape(shift) &&
-           body_expr[rhs] == Value::Const(-1) {
+        if body_expr[lhs] == Value::Tape(shift) && body_expr[rhs] == Value::Const(-1) {
             return true;
         }
     }
     false
 }
 
-/// Given a loop with no end shift, where the body is a single DAG, 
+/// Given a loop with no end shift, where the body is a single DAG,
 /// if possible optimize such that the loop is replaced with a flat
 /// DAG.
 fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {

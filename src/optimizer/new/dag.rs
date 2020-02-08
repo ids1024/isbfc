@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Copy, Hash, Debug, PartialEq, Eq)]
 /// An index of a node in a DAG
@@ -160,7 +160,7 @@ impl DAG {
                         *i = self[*node];
                     }
                 }
-                Value::Const(_) => {},
+                Value::Const(_) => {}
                 Value::Add(lhs, rhs) | Value::Multiply(lhs, rhs) => {
                     lhs.0 += self.nodes.len();
                     rhs.0 += self.nodes.len();
@@ -178,12 +178,14 @@ impl DAG {
     pub fn dependencies(&self, node: Node) -> HashSet<i32> {
         fn dependencies_iter(dag: &DAG, set: &mut HashSet<i32>, node: Node) {
             match dag[node] {
-                Value::Tape(offset) => { set.insert(offset); },
-                Value::Const(_) => {},
+                Value::Tape(offset) => {
+                    set.insert(offset);
+                }
+                Value::Const(_) => {}
                 Value::Multiply(l, r) => {
                     dependencies_iter(dag, set, l);
                     dependencies_iter(dag, set, r);
-                },
+                }
                 Value::Add(l, r) => {
                     dependencies_iter(dag, set, l);
                     dependencies_iter(dag, set, r);
@@ -195,5 +197,3 @@ impl DAG {
         set
     }
 }
-
-
