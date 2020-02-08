@@ -2,12 +2,14 @@
 
 #![allow(dead_code)]
 
-use std::collections::{BTreeSet, HashMap, VecDeque, HashSet};
-use std::fmt;
+use std::collections::HashMap;
 
 use super::Optimizer;
 use crate::{LIRBuilder, AST, LIR};
 use std::io::Write;
+
+mod dag;
+use dag::{Value, DAG};
 
 pub struct NewOptimizer;
 
@@ -20,177 +22,6 @@ impl Optimizer for NewOptimizer {
     fn dumpir(&self, ast: &[AST], level: u32, file: &mut dyn Write) -> std::io::Result<()> {
         let ir = optimize_expr(ast, DAG::new(true)).0;
         write!(file, "{:#?}", ir)
-    }
-}
-
-#[derive(Clone, Copy, Hash, PartialEq, Debug)]
-enum Value {
-    Tape(i32),
-    Const(i32),
-    Multiply(usize, usize),
-    Add(usize, usize),
-}
-
-/*
-impl fmt::Debug for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Value::Tape(offset) => {
-                write!(f, "tape[{}]", offset)?;
-            }
-            Value::Const(value) => {
-                write!(f, "{}", value)?;
-            }
-            Value::Multiply(ref l, ref r) => {
-                write!(f, "({:?} * {:?})", l, r)?;
-            }
-            Value::Add(ref l, ref r) => {
-                write!(f, "({:?} + {:?})", l, r)?;
-            }
-        }
-        Ok(())
-    }
-}
-*/
-
-// TODO: try adding HashMap<Value, usize> for reverse node lookup;
-// see if this helps for efficiency.
-#[derive(Clone, Debug)]
-struct DAG {
-    nodes: Vec<Value>,
-    terminals: HashMap<i32, usize>,
-    zeroed: bool,
-}
-
-impl DAG {
-    fn new(zeroed: bool) -> Self {
-        Self {
-            nodes: Vec::new(),
-            terminals: HashMap::new(),
-            zeroed,
-        }
-    }
-
-    fn add_node(&mut self, value: Value) -> usize {
-        self.nodes.push(value);
-        self.nodes.len() - 1
-    }
-
-    fn default_value(&self, offset: i32) -> Value {
-        if self.zeroed {
-            Value::Const(0)
-        } else {
-            Value::Tape(offset)
-        }
-    }
-
-    fn set(&mut self, offset: i32, value: Value) {
-        let node = self.add_node(value);
-        self.terminals.insert(offset, node);
-    }
-
-    fn get(&self, offset: i32) -> Value {
-        self.terminals
-            .get(&offset)
-            .map(|x| self.nodes[*x])
-            .unwrap_or(self.default_value(offset))
-    }
-
-    fn get_node(&mut self, offset: i32) -> usize {
-        if let Some(node) = self.terminals.get(&offset) {
-            *node
-        } else {
-            let node = self.add_node(self.default_value(offset));
-            self.terminals.insert(offset, node);
-            node
-        }
-    }
-
-    fn add(&mut self, offset: i32, value: i32) {
-        let old_node = self.get_node(offset);
-        // Combine with existing add of constant
-        if let Value::Add(lhs, rhs) = self.nodes[old_node] {
-            if let Value::Const(old_value) = self.nodes[rhs] {
-                let new_node = self.add_node(Value::Const(old_value + value));
-                self.set(offset, Value::Add(lhs, new_node));
-                return;
-            }
-        }
-        let new_node = self.add_node(Value::Const(value));
-        self.set(offset, Value::Add(old_node, new_node));
-    }
-
-    fn mul(&mut self, offset: i32, value: Value) {
-        let old_node = self.get_node(offset);
-        let new_node = self.add_node(value);
-        self.set(offset, Value::Multiply(old_node, new_node));
-    }
-
-    fn clear(&mut self) {
-        self.nodes.clear();
-        self.terminals.clear();
-    }
-
-    fn shift(&mut self, shift: i32) {
-        for i in self.nodes.iter_mut() {
-            if let Value::Tape(offset) = *i {
-                *i = Value::Tape(offset + shift);
-            }
-        }
-    }
-
-    fn topological_sort(&self) -> impl Iterator<Item = usize> {
-        // Assumes nodes are never deleted, so numberic order is toplogical
-        // TODO: doesn't skip unneeded nodes
-        0..self.nodes.len()
-    }
-
-    fn extend(&mut self, mut expr: DAG) {
-        for i in expr.terminals.values_mut() {
-            *i += self.nodes.len();
-        }
-
-        for i in &mut expr.nodes {
-            match i {
-                Value::Tape(offset) => {
-                    if let Some(node) = self.terminals.get(offset) {
-                        // XXX
-                        *i = self.nodes[*node];
-                    }
-                }
-                Value::Const(_) => {},
-                Value::Add(lhs, rhs) | Value::Multiply(lhs, rhs) => {
-                    *lhs += self.nodes.len();
-                    *rhs += self.nodes.len();
-                }
-            }
-        }
-
-        self.terminals.extend(expr.terminals);
-        self.nodes.extend(expr.nodes);
-    }
-
-    //fn simplify(&mut self);
-
-    // TODO efficiency
-    fn dependencies(&self, node: usize) -> HashSet<i32> {
-        fn dependencies_iter(dag: &DAG, set: &mut HashSet<i32>, node: usize) {
-            match dag.nodes[node] {
-                Value::Tape(offset) => { set.insert(offset); },
-                Value::Const(_) => {},
-                Value::Multiply(l, r) => {
-                    dependencies_iter(dag, set, l);
-                    dependencies_iter(dag, set, r);
-                },
-                Value::Add(l, r) => {
-                    dependencies_iter(dag, set, l);
-                    dependencies_iter(dag, set, r);
-                }
-            }
-        }
-        let mut set = HashSet::new();
-        dependencies_iter(self, &mut set, node);
-        set
     }
 }
 
@@ -251,8 +82,8 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
 
 fn is_dec_one(shift: i32, body_expr: &DAG) -> bool {
     if let Value::Add(lhs, rhs) = body_expr.get(shift) {
-        if body_expr.nodes[lhs] == Value::Tape(shift) &&
-           body_expr.nodes[rhs] == Value::Const(-1) {
+        if body_expr[lhs] == Value::Tape(shift) &&
+           body_expr[rhs] == Value::Const(-1) {
             return true;
         }
     }
@@ -268,16 +99,16 @@ fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {
     }
 
     let mut expr = body_expr.clone();
-    for (k, v) in &body_expr.terminals {
-        if *k == shift {
+    for (k, v) in body_expr.terminals() {
+        if k == shift {
             continue;
         }
 
-        if !body_expr.dependencies(*v).is_empty() {
+        if !body_expr.dependencies(v).is_empty() {
             return None;
         }
 
-        expr.mul(*k, Value::Tape(shift));
+        expr.mul(k, Value::Tape(shift));
     }
     expr.set(shift, Value::Const(0));
     Some(expr)
@@ -347,7 +178,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 for i in expr.topological_sort() {
                     let reg = state.reg();
                     map.insert(i, reg);
-                    match expr.nodes[i] {
+                    match expr[i] {
                         Value::Tape(offset) => {
                             state.lir.mov(Reg(reg), Tape(offset));
                         }
@@ -363,8 +194,8 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                     }
                 }
 
-                for (k, v) in &expr.terminals {
-                    state.lir.mov(Tape(*k), Reg(map[v]));
+                for (k, v) in expr.terminals() {
+                    state.lir.mov(Tape(k), Reg(map[&v]));
                 }
             }
         }
