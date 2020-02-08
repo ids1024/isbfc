@@ -22,6 +22,7 @@ pub use crate::assembly::{assemble, link};
 pub use crate::elf::{elf64_get_section, elf64_write};
 pub use crate::lir::{LIRBuilder, LIR};
 pub use crate::optimizer::{
-    NewOptimizer, OldOptimizer, Optimizer, SimpleAddOptimizer, SimpleOptimizer, OPTIMIZERS,
+    OldOptimizer, Optimizer, SimpleAddOptimizer, SimpleOptimizer, NewOptimizer,
+    OPTIMIZERS,
 };
 pub use crate::parser::{parse, AST};

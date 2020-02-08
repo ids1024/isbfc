@@ -69,7 +69,7 @@ impl DAG {
         }
     }
 
-    fn add_node(&mut self, value: Value) -> Node {
+    pub fn add_node(&mut self, value: Value) -> Node {
         self.nodes.push(value);
         Node(self.nodes.len() - 1)
     }

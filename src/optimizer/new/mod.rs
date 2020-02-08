@@ -80,36 +80,46 @@ fn optimize_expr(body: &[AST], outside_expr: DAG) -> (Vec<IR>, i32) {
     (ir, shift)
 }
 
-fn is_dec_one(shift: i32, body_expr: &DAG) -> bool {
+fn is_radd(shift: i32, body_expr: &DAG) -> Option<i32> {
     if let Value::Add(lhs, rhs) = body_expr.get(shift) {
-        if body_expr[lhs] == Value::Tape(shift) && body_expr[rhs] == Value::Const(-1) {
-            return true;
+        if body_expr[lhs] == Value::Tape(shift) {
+            if let Value::Const(a) = body_expr[rhs] {
+                return Some(a);
+            }
         }
     }
-    false
+    None
 }
 
 /// Given a loop with no end shift, where the body is a single DAG,
 /// if possible optimize such that the loop is replaced with a flat
 /// DAG.
 fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {
-    if !is_dec_one(shift, &body_expr) {
+    if is_radd(shift, &body_expr) != Some(-1) {
         return None;
     }
 
-    let mut expr = body_expr.clone();
+    let mut expr = DAG::new(false);
+    expr.set(shift, Value::Const(0));
+
     for (k, v) in body_expr.terminals() {
         if k == shift {
             continue;
-        }
-
-        if !body_expr.dependencies(v).is_empty() {
+        //} else if body_expr.dependencies(v).is_empty() {
+        //    continue;
+        } else if body_expr[v] == Value::Tape(k) {
+            continue;
+        } else if let Some(a) = is_radd(k, &body_expr) {
+            let tapeval = expr.add_node(Value::Tape(k));
+            let lhs = expr.add_node(Value::Tape(shift));
+            let rhs = expr.add_node(Value::Const(a));
+            let addend = expr.add_node(Value::Multiply(lhs, rhs));
+            expr.set(k, Value::Add(tapeval, addend));
+        } else {
             return None;
         }
-
-        expr.mul(k, Value::Tape(shift));
     }
-    expr.set(shift, Value::Const(0));
+
     Some(expr)
 }
 
