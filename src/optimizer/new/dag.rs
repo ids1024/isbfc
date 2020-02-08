@@ -196,4 +196,16 @@ impl DAG {
         dependencies_iter(self, &mut set, node);
         set
     }
+
+    pub fn as_add_const(&self, offset: i32) -> Option<i32> {
+        if let Value::Add(lhs, rhs) = self.get(offset) {
+            match (self[lhs], self[rhs]) {
+                (Value::Tape(off), Value::Const(a)) if off == offset => Some(a),
+                (Value::Const(a), Value::Tape(off)) if off == offset => Some(a),
+                _ => None
+            }
+        } else {
+            None
+        }
+    }
 }
