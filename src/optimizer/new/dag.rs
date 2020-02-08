@@ -113,6 +113,9 @@ impl DAG {
                 self.set(offset, Value::Add(lhs, new_node));
                 return;
             }
+        } else if let Value::Const(old_value) = self[old_node] {
+            self.set(offset, Value::Const(old_value + value));
+            return;
         }
         let new_node = self.add_node(Value::Const(value));
         self.set(offset, Value::Add(old_node, new_node));
