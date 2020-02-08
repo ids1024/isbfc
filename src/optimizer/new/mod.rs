@@ -90,9 +90,9 @@ fn is_dec_one(shift: i32, body_expr: &DAG) -> bool {
     false
 }
 
-// Given a loop with no end shift, where the body is a single DAG, 
-// if possible optimize such that the loop is replaced with a flat
-// DAG.
+/// Given a loop with no end shift, where the body is a single DAG, 
+/// if possible optimize such that the loop is replaced with a flat
+/// DAG.
 fn optimize_expr_loop(shift: i32, body_expr: DAG) -> Option<DAG> {
     if !is_dec_one(shift, &body_expr) {
         return None;

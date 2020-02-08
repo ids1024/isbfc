@@ -1,13 +1,18 @@
 use std::collections::{HashSet, HashMap};
 
 #[derive(Clone, Copy, Hash, Debug, PartialEq, Eq)]
+/// An index of a node in a DAG
 pub struct Node(usize);
 
 #[derive(Clone, Copy, Hash, PartialEq, Debug)]
 pub enum Value {
+    /// The value of the tape at a given offset from the cursor
     Tape(i32),
+    /// A constant value
     Const(i32),
+    /// Multiply one DAG node with another
     Multiply(Node, Node),
+    /// Add one DAG node to another
     Add(Node, Node),
 }
 
@@ -33,6 +38,10 @@ impl fmt::Debug for Value {
 }
 */
 
+/// A directed acyclic graph representing operations optimized from Brainfuck.
+/// Code consisting only of shifts and adds can be reduced to a graph from
+/// tape offsets to tape offsets. Certain loops can also be transformed into a
+/// DAG.
 // TODO: try adding HashMap<Value, usize> for reverse node lookup;
 // see if this helps for efficiency.
 #[derive(Clone, Debug)]
