@@ -48,7 +48,9 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                     outbuffpos = 0;
                 }
 
-                state.lir.shift(*offset);
+                if (*offset != 0) {
+                    state.lir.shift(*offset);
+                }
 
                 state.loopnum += 1;
                 let startlabel = format!("loop{}", state.loopnum);
@@ -57,7 +59,9 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.label(startlabel.clone());
 
                 ir_to_lir_iter(state, inner);
-                state.lir.shift(*end_shift);
+                if (*end_shift != 0) {
+                    state.lir.shift(*end_shift);
+                }
 
                 state.lir.label(endlabel.clone());
                 state.lir.jnz(Tape(0), startlabel.clone());
