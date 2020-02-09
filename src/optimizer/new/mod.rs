@@ -40,7 +40,6 @@ fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
     let mut expr = DAG::new(false);
     let mut shift = 0;
     for i in body {
-        expr.simplify();
         match i {
             AST::Input => {
                 ir.push(IR::Input(shift));
@@ -52,6 +51,7 @@ fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
                 ir.push(IR::Output(shift));
             }
             AST::Loop(body) => {
+                expr.simplify();
                 let (loop_body, loop_shift) = optimize_expr(body, &expr);
                 if loop_body.len() == 1 && shift == 0 {
                     if let IR::Expr(ref loop_expr) = loop_body[0] {
@@ -76,6 +76,7 @@ fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
         }
     }
 
+    expr.simplify();
     ir.push(IR::Expr(expr.clone()));
 
     (ir, shift)
