@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 /// An index of a node in a DAG
 pub struct Node(usize);
 
-#[derive(Clone, Copy, Hash, PartialEq, Debug)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum Value {
     /// The value of the tape at a given offset from the cursor
     Tape(i32),
@@ -175,7 +175,53 @@ impl DAG {
         self.nodes.extend(expr.nodes);
     }
 
-    //fn simplify(&mut self);
+    pub fn simplify(&mut self) {
+        // Better approach: traverse starting from terminals, simplifying, and construct new nodes
+        // and terminals on the way
+        //
+        // For each terminal, recurse to root nodes adding to the nodes list, performing
+        // simplifications, and maintain a hashmap to avoid two identical nodes
+
+        // TODO: Remove unreachable
+        // TODO efficiency
+
+        fn simplify_iter(dag: &DAG, nodes: &mut Vec<Value>, node: Node) -> Value {
+            match dag[node] {
+                Value::Tape(_) | Value::Const(_) => dag[node],
+                Value::Multiply(l, r) => {
+                    let lhs = simplify_iter(dag, nodes, l);
+                    let rhs = simplify_iter(dag, nodes, r);
+                    if let (Value::Const(a), Value::Const(b)) = (lhs, rhs) {
+                        Value::Const(a * b)
+                    } else {
+                        let l = Node(nodes.iter().position(|x| *x==lhs).unwrap_or_else(|| {nodes.push(lhs); nodes.len() - 1}));
+                        let r = Node(nodes.iter().position(|x| *x==rhs).unwrap_or_else(|| {nodes.push(rhs); nodes.len() - 1}));
+                        Value::Multiply(l, r)
+                    }
+                },
+                Value::Add(l, r) => {
+                    let lhs = simplify_iter(dag, nodes, l);
+                    let rhs = simplify_iter(dag, nodes, r);
+                    if let (Value::Const(a), Value::Const(b)) = (lhs, rhs) {
+                        Value::Const(a + b)
+                    } else {
+                        let l = Node(nodes.iter().position(|x| *x==lhs).unwrap_or_else(|| {nodes.push(lhs); nodes.len() - 1}));
+                        let r = Node(nodes.iter().position(|x| *x==rhs).unwrap_or_else(|| {nodes.push(rhs); nodes.len() - 1}));
+                        Value::Add(l, r)
+                    }
+                }
+            }
+        }
+
+        let mut new_nodes = Vec::new();
+        for (k, v) in &self.terminals {
+            simplify_iter(self, &mut new_nodes, *v);
+        }
+
+        //if self.nodes.len() != new_nodes.len() {
+        //    println!("{} -> {}", self.nodes.len(), new_nodes.len());
+        //}
+    }
 
     // TODO efficiency
     pub fn dependencies(&self, node: Node) -> HashSet<i32> {

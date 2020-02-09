@@ -40,6 +40,7 @@ fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
     let mut expr = DAG::new(false);
     let mut shift = 0;
     for i in body {
+        expr.simplify();
         match i {
             AST::Input => {
                 ir.push(IR::Input(shift));
