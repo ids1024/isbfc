@@ -70,8 +70,13 @@ impl DAG {
     }
 
     pub fn add_node(&mut self, value: Value) -> Node {
-        self.nodes.push(value);
-        Node(self.nodes.len() - 1)
+        // TODO: efficiency
+        if let Some(pos) = self.nodes.iter().position(|x| *x==value) {
+            Node(pos)
+        } else {
+            self.nodes.push(value);
+            Node(self.nodes.len() - 1)
+        }
     }
 
     fn default_value(&self, offset: i32) -> Value {
@@ -176,50 +181,47 @@ impl DAG {
     }
 
     pub fn simplify(&mut self) {
-        // Better approach: traverse starting from terminals, simplifying, and construct new nodes
-        // and terminals on the way
-        //
-        // For each terminal, recurse to root nodes adding to the nodes list, performing
-        // simplifications, and maintain a hashmap to avoid two identical nodes
-
-        // TODO: Remove unreachable
-        // TODO efficiency
-
-        fn simplify_iter(dag: &DAG, nodes: &mut Vec<Value>, node: Node) -> Value {
-            match dag[node] {
-                Value::Tape(_) | Value::Const(_) => dag[node],
+        fn simplify_iter(dag: &mut DAG, old_nodes: &[Value], node: Node) -> Value {
+            let value = old_nodes[node.0];
+            match value {
+                Value::Tape(_) | Value::Const(_) => value,
                 Value::Multiply(l, r) => {
-                    let lhs = simplify_iter(dag, nodes, l);
-                    let rhs = simplify_iter(dag, nodes, r);
+                    let lhs = simplify_iter(dag, old_nodes, l);
+                    let rhs = simplify_iter(dag, old_nodes, r);
                     if let (Value::Const(a), Value::Const(b)) = (lhs, rhs) {
                         Value::Const(a * b)
                     } else {
-                        let l = Node(nodes.iter().position(|x| *x==lhs).unwrap_or_else(|| {nodes.push(lhs); nodes.len() - 1}));
-                        let r = Node(nodes.iter().position(|x| *x==rhs).unwrap_or_else(|| {nodes.push(rhs); nodes.len() - 1}));
+                        let l = dag.add_node(lhs);
+                        let r = dag.add_node(rhs);
                         Value::Multiply(l, r)
                     }
                 },
                 Value::Add(l, r) => {
-                    let lhs = simplify_iter(dag, nodes, l);
-                    let rhs = simplify_iter(dag, nodes, r);
+                    let lhs = simplify_iter(dag, old_nodes, l);
+                    let rhs = simplify_iter(dag, old_nodes, r);
                     if let (Value::Const(a), Value::Const(b)) = (lhs, rhs) {
                         Value::Const(a + b)
                     } else {
-                        let l = Node(nodes.iter().position(|x| *x==lhs).unwrap_or_else(|| {nodes.push(lhs); nodes.len() - 1}));
-                        let r = Node(nodes.iter().position(|x| *x==rhs).unwrap_or_else(|| {nodes.push(rhs); nodes.len() - 1}));
+                        let l = dag.add_node(lhs);
+                        let r = dag.add_node(rhs);
                         Value::Add(l, r)
                     }
                 }
             }
         }
 
-        let mut new_nodes = Vec::new();
-        for (k, v) in &self.terminals {
-            simplify_iter(self, &mut new_nodes, *v);
+        let old_terminals = std::mem::take(&mut self.terminals);
+        let old_nodes = std::mem::take(&mut self.nodes);
+
+        for (k, v) in old_terminals {
+            let value = simplify_iter(self, &old_nodes, v);
+            if value != Value::Tape(k) {
+                self.set(k, value);
+            }
         }
 
-        //if self.nodes.len() != new_nodes.len() {
-        //    println!("{} -> {}", self.nodes.len(), new_nodes.len());
+        //if old_nodes.len() != self.nodes.len() {
+        //    println!("{} -> {}", old_nodes.len(), self.nodes.len());
         //}
     }
 
