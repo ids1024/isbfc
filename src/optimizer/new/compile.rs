@@ -63,29 +63,31 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.jnz(Tape(0), startlabel.clone());
             }
             IR::Expr(expr) => {
-                let mut map = HashMap::new();
+                let mut map: HashMap<_, RVal> = HashMap::new();
 
                 for i in expr.topological_sort() {
-                    let reg = state.reg();
-                    map.insert(i, reg);
                     match expr[i] {
                         Value::Tape(offset) => {
-                            state.lir.mov(Reg(reg), Tape(offset));
+                            map.insert(i, Tape(offset).into());
                         }
                         Value::Const(value) => {
-                            state.lir.mov(Reg(reg), Immediate(value));
+                            map.insert(i, Immediate(value));
                         }
                         Value::Multiply(a, b) => {
-                            state.lir.mul(Reg(reg), Reg(map[&a]), Reg(map[&b]));
+                            let reg = state.reg();
+                            state.lir.mul(Reg(reg), map[&a].clone(), map[&b].clone());
+                            map.insert(i, Reg(reg).into());
                         }
                         Value::Add(a, b) => {
-                            state.lir.add(Reg(reg), Reg(map[&a]), Reg(map[&b]));
+                            let reg = state.reg();
+                            state.lir.add(Reg(reg), map[&a].clone(), map[&b].clone());
+                            map.insert(i, Reg(reg).into());
                         }
                     }
                 }
 
                 for (k, v) in expr.terminals() {
-                    state.lir.mov(Tape(k), Reg(map[&v]));
+                    state.lir.mov(Tape(k), map[&v].clone());
                 }
             }
         }
