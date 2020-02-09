@@ -188,23 +188,47 @@ impl DAG {
                 Value::Multiply(l, r) => {
                     let lhs = simplify_iter(dag, old_nodes, l);
                     let rhs = simplify_iter(dag, old_nodes, r);
-                    if let (Value::Const(a), Value::Const(b)) = (lhs, rhs) {
-                        Value::Const(a * b)
-                    } else {
-                        let l = dag.add_node(lhs);
-                        let r = dag.add_node(rhs);
-                        Value::Multiply(l, r)
+                    match (lhs, rhs) {
+                        (Value::Const(a), Value::Const(b)) => {
+                            Value::Const(a * b)
+                        }
+                        (Value::Const(0), _) => {
+                            Value::Const(0)
+                        }
+                        (_, Value::Const(0)) => {
+                            Value::Const(0)
+                        }
+                        (Value::Const(1), _) => {
+                            rhs
+                        }
+                        (_, Value::Const(1)) => {
+                            lhs
+                        }
+                        _ => {
+                            let l = dag.add_node(lhs);
+                            let r = dag.add_node(rhs);
+                            Value::Multiply(l, r)
+                        }
                     }
                 },
                 Value::Add(l, r) => {
                     let lhs = simplify_iter(dag, old_nodes, l);
                     let rhs = simplify_iter(dag, old_nodes, r);
-                    if let (Value::Const(a), Value::Const(b)) = (lhs, rhs) {
-                        Value::Const(a + b)
-                    } else {
-                        let l = dag.add_node(lhs);
-                        let r = dag.add_node(rhs);
-                        Value::Add(l, r)
+                    match (lhs, rhs) {
+                        (Value::Const(a), Value::Const(b)) => {
+                            Value::Const(a + b)
+                        }
+                        (Value::Const(0), _) => {
+                            rhs
+                        }
+                        (_, Value::Const(0)) => {
+                            lhs
+                        }
+                        _ => {
+                            let l = dag.add_node(lhs);
+                            let r = dag.add_node(rhs);
+                            Value::Add(l, r)
+                        }
                     }
                 }
             }
