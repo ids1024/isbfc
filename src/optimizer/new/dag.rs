@@ -138,6 +138,10 @@ impl DAG {
     }
 
     pub fn shift(&mut self, shift: i32) {
+        let old_terminals = std::mem::take(&mut self.terminals);
+        for (k, v) in old_terminals {
+            self.terminals.insert(k + shift, v);
+        }
         for i in self.nodes.iter_mut() {
             if let Value::Tape(offset) = *i {
                 *i = Value::Tape(offset + shift);

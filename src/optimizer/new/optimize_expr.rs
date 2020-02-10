@@ -22,9 +22,10 @@ pub fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
             AST::Loop(body) => {
                 expr.simplify();
                 let (loop_body, loop_shift) = optimize_expr(body, &expr);
-                if loop_body.len() == 1 && shift == 0 {
+                if loop_body.len() == 1 && loop_shift == 0 {
                     if let IR::Expr(ref loop_expr) = loop_body[0] {
-                        if let Some(new_expr) = optimize_expr_loop(shift, &loop_expr) {
+                        if let Some(mut new_expr) = optimize_expr_loop(&loop_expr) {
+                            new_expr.shift(shift);
                             expr.extend(new_expr);
                             continue;
                         }
@@ -54,7 +55,7 @@ pub fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
 /// Given a loop with no end shift, where the body is a single DAG,
 /// if possible optimize such that the loop is replaced with a flat
 /// DAG.
-fn optimize_expr_loop(shift: i32, body_expr: &DAG) -> Option<DAG> {
+fn optimize_expr_loop(body_expr: &DAG) -> Option<DAG> {
     // TODO: Generalize constants to any tape offset unchange in DAG
 
     if body_expr.as_add_const(0) != Some(-1) {
@@ -62,19 +63,19 @@ fn optimize_expr_loop(shift: i32, body_expr: &DAG) -> Option<DAG> {
     }
 
     let mut expr = DAG::new(false);
-    expr.set(shift, Value::Const(0));
+    expr.set(0, Value::Const(0));
 
     for (k, v) in body_expr.terminals() {
-        if k == shift {
+        if k == 0 {
             continue;
         } else if body_expr[v] == Value::Tape(k) {
             continue;
-        } else if let Some(a) = body_expr.as_add_const(k) {
-            let tapeval = expr.add_node(Value::Tape(k + shift));
-            let lhs = expr.add_node(Value::Tape(shift));
-            let rhs = expr.add_node(Value::Const(a));
-            let addend = expr.add_node(Value::Multiply(lhs, rhs));
-            expr.set(k, Value::Add(tapeval, addend));
+        //} else if let Some(a) = body_expr.as_add_const(k) {
+        //    let tapeval = expr.add_node(Value::Tape(k));
+        //    let lhs = expr.add_node(Value::Tape(0));
+        //    let rhs = expr.add_node(Value::Const(a));
+        //    let addend = expr.add_node(Value::Multiply(lhs, rhs));
+        //    expr.set(k, Value::Add(tapeval, addend));
         } else if let Value::Const(a) = body_expr[v] {
             expr.set(k, Value::Const(a));
         } else {
