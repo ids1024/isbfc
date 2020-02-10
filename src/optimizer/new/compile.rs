@@ -72,7 +72,9 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 for i in expr.topological_sort() {
                     match expr[i] {
                         Value::Tape(offset) => {
-                            map.insert(i, Tape(offset).into());
+                            let reg = state.reg();
+                            state.lir.mov(Reg(reg), Tape(offset));
+                            map.insert(i, Reg(reg).into());
                         }
                         Value::Const(value) => {
                             map.insert(i, Immediate(value));
