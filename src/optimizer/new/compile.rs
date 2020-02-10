@@ -37,7 +37,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
             }
             IR::Input(offset) => {
                 state.lir.input("inputbuf", 0, 1);
-                state.lir.mov(Tape(0), Buf("inputbuf".into(), 0));
+                state.lir.mov(Tape(*offset), Buf("inputbuf".into(), 0));
             }
             IR::Loop(offset, inner, end_shift) => {
                 if outbuffpos != 0 {
