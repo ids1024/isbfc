@@ -1,4 +1,5 @@
 use crate::AST;
+use crate::lir::RVal;
 use super::dag::{Value, DAG};
 use super::ir::IR;
 
@@ -19,9 +20,13 @@ fn optimize_expr(body: &[AST]) -> (Vec<IR>, i32) {
                 expr.set(shift, Value::Tape(shift));
             }
             AST::Output => {
-                ir.push(IR::Expr(expr.clone()));
-                expr.clear();
-                ir.push(IR::Output(shift));
+                if let Value::Const(value) = expr.get(shift) {
+                    ir.push(IR::Output(RVal::Immediate(value)));
+                } else {
+                    ir.push(IR::Expr(expr.clone()));
+                    expr.clear();
+                    ir.push(IR::Output(RVal::Tape(shift)));
+                }
             }
             AST::Loop(body) => {
                 expr.simplify();

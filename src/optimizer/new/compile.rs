@@ -29,10 +29,10 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
 
     for i in ir {
         match i {
-            IR::Output(offset) => {
+            IR::Output(value) => {
                 state
                     .lir
-                    .mov(Buf("strbuf".into(), outbuffpos), Tape(*offset));
+                    .mov(Buf("strbuf".into(), outbuffpos), value.clone());
                 outbuffpos += 1;
             }
             IR::Input(offset) => {
