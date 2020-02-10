@@ -103,7 +103,7 @@ pub fn codegen(lir: &[LIR], cell: CellType, tape_size: i32) -> String {
             "#include <stdint.h>\n",
             "#include <stdio.h>\n",
             "{} tape[{}];\n",
-            "size_t cursor = {};\n",
+            "ssize_t cursor = {};\n",
             "{}\n",
             "int main() {{\n",
             "{}\n",
