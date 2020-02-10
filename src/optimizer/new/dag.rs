@@ -185,7 +185,7 @@ impl DAG {
     }
 
     pub fn simplify(&mut self) {
-        return;
+        /* XXX this was causing a problem
         fn simplify_iter(dag: &mut DAG, old_nodes: &[Value], node: Node) -> Value {
             let value = old_nodes[node.0];
             match value {
@@ -252,6 +252,7 @@ impl DAG {
         //if old_nodes.len() != self.nodes.len() {
         //    println!("{} -> {}", old_nodes.len(), self.nodes.len());
         //}
+        */
     }
 
     // TODO efficiency

@@ -48,7 +48,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                     outbuffpos = 0;
                 }
 
-                if (*offset != 0) {
+                if *offset != 0 {
                     state.lir.shift(*offset);
                 }
 
@@ -59,7 +59,7 @@ fn ir_to_lir_iter(state: &mut CompileState, ir: &[IR]) {
                 state.lir.label(startlabel.clone());
 
                 ir_to_lir_iter(state, inner);
-                if (*end_shift != 0) {
+                if *end_shift != 0 {
                     state.lir.shift(*end_shift);
                 }
 
