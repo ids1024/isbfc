@@ -185,6 +185,7 @@ impl DAG {
     }
 
     pub fn simplify(&mut self) {
+        return;
         fn simplify_iter(dag: &mut DAG, old_nodes: &[Value], node: Node) -> Value {
             let value = old_nodes[node.0];
             match value {

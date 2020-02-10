@@ -70,12 +70,12 @@ fn optimize_expr_loop(body_expr: &DAG) -> Option<DAG> {
             continue;
         } else if body_expr[v] == Value::Tape(k) {
             continue;
-        //} else if let Some(a) = body_expr.as_add_const(k) {
-        //    let tapeval = expr.add_node(Value::Tape(k));
-        //    let lhs = expr.add_node(Value::Tape(0));
-        //    let rhs = expr.add_node(Value::Const(a));
-        //    let addend = expr.add_node(Value::Multiply(lhs, rhs));
-        //    expr.set(k, Value::Add(tapeval, addend));
+        } else if let Some(a) = body_expr.as_add_const(k) {
+            let tapeval = expr.add_node(Value::Tape(k));
+            let lhs = expr.add_node(Value::Tape(0));
+            let rhs = expr.add_node(Value::Const(a));
+            let addend = expr.add_node(Value::Multiply(lhs, rhs));
+            expr.set(k, Value::Add(tapeval, addend));
         } else if let Value::Const(a) = body_expr[v] {
             expr.set(k, Value::Const(a));
         } else {
