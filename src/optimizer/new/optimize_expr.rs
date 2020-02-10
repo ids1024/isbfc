@@ -57,7 +57,7 @@ pub fn optimize_expr(body: &[AST], outside_expr: &DAG) -> (Vec<IR>, i32) {
 fn optimize_expr_loop(shift: i32, body_expr: &DAG) -> Option<DAG> {
     // TODO: Generalize constants to any tape offset unchange in DAG
 
-    if body_expr.as_add_const(shift) != Some(-1) {
+    if body_expr.as_add_const(0) != Some(-1) {
         return None;
     }
 
@@ -70,7 +70,7 @@ fn optimize_expr_loop(shift: i32, body_expr: &DAG) -> Option<DAG> {
         } else if body_expr[v] == Value::Tape(k) {
             continue;
         } else if let Some(a) = body_expr.as_add_const(k) {
-            let tapeval = expr.add_node(Value::Tape(k));
+            let tapeval = expr.add_node(Value::Tape(k + shift));
             let lhs = expr.add_node(Value::Tape(shift));
             let rhs = expr.add_node(Value::Const(a));
             let addend = expr.add_node(Value::Multiply(lhs, rhs));
