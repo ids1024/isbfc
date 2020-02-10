@@ -149,6 +149,10 @@ impl DAG {
         }
     }
 
+    pub fn contains_terminal(&self, index: i32) -> bool {
+        self.terminals.contains_key(&index)
+    }
+
     pub fn topological_sort(&self) -> impl Iterator<Item = Node> {
         // Assumes nodes are never deleted, so numberic order is toplogical
         // TODO: doesn't skip unneeded nodes
