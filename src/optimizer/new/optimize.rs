@@ -2,7 +2,11 @@ use crate::AST;
 use super::dag::{Value, DAG};
 use super::ir::IR;
 
-pub fn optimize_expr(body: &[AST]) -> (Vec<IR>, i32) {
+pub fn optimize(body: &[AST]) -> Vec<IR> {
+    optimize_expr(body).0
+}
+
+fn optimize_expr(body: &[AST]) -> (Vec<IR>, i32) {
     let mut ir = Vec::new();
 
     // TODO zeroing
