@@ -90,7 +90,7 @@ impl Options {
                     .long("optimizer")
                     .takes_value(true)
                     .possible_values(&OPTIMIZERS.keys().cloned().collect::<Vec<&str>>())
-                    .default_value("old"),
+                    .default_value("new"),
             )
             .arg(
                 Arg::with_name("level")
