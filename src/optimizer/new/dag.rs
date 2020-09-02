@@ -69,6 +69,10 @@ impl DAG {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.terminals.is_empty()
+    }
+
     pub fn add_node(&mut self, value: Value) -> Node {
         // TODO: efficiency
         if let Some(pos) = self.nodes.iter().position(|x| *x==value) {

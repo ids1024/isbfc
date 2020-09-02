@@ -23,7 +23,9 @@ fn optimize_expr(body: &[AST]) -> (Vec<IR>, i32) {
                 if let Value::Const(value) = expr.get(shift) {
                     ir.push(IR::Output(RVal::Immediate(value)));
                 } else {
-                    ir.push(IR::Expr(expr.clone()));
+                    if !expr.is_empty() {
+                        ir.push(IR::Expr(expr.clone()));
+                    }
                     expr.clear();
                     ir.push(IR::Output(RVal::Tape(shift)));
                 }
@@ -56,7 +58,9 @@ fn optimize_expr(body: &[AST]) -> (Vec<IR>, i32) {
     }
 
     expr.simplify();
-    ir.push(IR::Expr(expr.clone()));
+    if !expr.is_empty() {
+        ir.push(IR::Expr(expr.clone()));
+    }
 
     (ir, shift)
 }
