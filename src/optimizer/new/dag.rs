@@ -204,17 +204,11 @@ impl DAG {
                         (Value::Const(a), Value::Const(b)) => {
                             Value::Const(a * b)
                         }
-                        (Value::Const(0), _) => {
+                        (Value::Const(0), _) | (_, Value::Const(0)) => {
                             Value::Const(0)
                         }
-                        (_, Value::Const(0)) => {
-                            Value::Const(0)
-                        }
-                        (Value::Const(1), _) => {
-                            rhs
-                        }
-                        (_, Value::Const(1)) => {
-                            lhs
+                        (Value::Const(1), val) | (val, Value::Const(1)) => {
+                            val
                         }
                         _ => {
                             let l = dag.add_node(lhs);
@@ -230,11 +224,8 @@ impl DAG {
                         (Value::Const(a), Value::Const(b)) => {
                             Value::Const(a + b)
                         }
-                        (Value::Const(0), _) => {
-                            rhs
-                        }
-                        (_, Value::Const(0)) => {
-                            lhs
+                        (Value::Const(0), val) | (val, Value::Const(0)) => {
+                            val
                         }
                         _ => {
                             let l = dag.add_node(lhs);
