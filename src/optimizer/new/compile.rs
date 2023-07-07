@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{LIRBuilder, LIR};
 use super::dag::Value;
 use super::ir::IR;
+use crate::{LIRBuilder, LIR};
 
 #[derive(Default)]
 struct CompileState {

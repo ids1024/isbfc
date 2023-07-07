@@ -6,8 +6,8 @@ use super::Optimizer;
 use crate::{AST, LIR};
 use std::io::Write;
 
-mod dag;
 mod compile;
+mod dag;
 use compile::ir_to_lir;
 mod ir;
 mod optimize;

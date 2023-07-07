@@ -1,5 +1,5 @@
-use crate::lir::RVal;
 use super::dag::DAG;
+use crate::lir::RVal;
 
 #[derive(Debug)]
 pub enum IR {

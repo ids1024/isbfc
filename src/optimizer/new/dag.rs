@@ -75,7 +75,7 @@ impl DAG {
 
     pub fn add_node(&mut self, value: Value) -> Node {
         // TODO: efficiency
-        if let Some(pos) = self.nodes.iter().position(|x| *x==value) {
+        if let Some(pos) = self.nodes.iter().position(|x| *x == value) {
             Node(pos)
         } else {
             self.nodes.push(value);
@@ -201,32 +201,22 @@ impl DAG {
                     let lhs = simplify_iter(dag, old_nodes, l);
                     let rhs = simplify_iter(dag, old_nodes, r);
                     match (lhs, rhs) {
-                        (Value::Const(a), Value::Const(b)) => {
-                            Value::Const(a * b)
-                        }
-                        (Value::Const(0), _) | (_, Value::Const(0)) => {
-                            Value::Const(0)
-                        }
-                        (Value::Const(1), val) | (val, Value::Const(1)) => {
-                            val
-                        }
+                        (Value::Const(a), Value::Const(b)) => Value::Const(a * b),
+                        (Value::Const(0), _) | (_, Value::Const(0)) => Value::Const(0),
+                        (Value::Const(1), val) | (val, Value::Const(1)) => val,
                         _ => {
                             let l = dag.add_node(lhs);
                             let r = dag.add_node(rhs);
                             Value::Multiply(l, r)
                         }
                     }
-                },
+                }
                 Value::Add(l, r) => {
                     let lhs = simplify_iter(dag, old_nodes, l);
                     let rhs = simplify_iter(dag, old_nodes, r);
                     match (lhs, rhs) {
-                        (Value::Const(a), Value::Const(b)) => {
-                            Value::Const(a + b)
-                        }
-                        (Value::Const(0), val) | (val, Value::Const(0)) => {
-                            val
-                        }
+                        (Value::Const(a), Value::Const(b)) => Value::Const(a + b),
+                        (Value::Const(0), val) | (val, Value::Const(0)) => val,
                         _ => {
                             let l = dag.add_node(lhs);
                             let r = dag.add_node(rhs);
@@ -280,7 +270,7 @@ impl DAG {
             match (self[lhs], self[rhs]) {
                 (Value::Tape(off), Value::Const(a)) if off == offset => Some(a),
                 (Value::Const(a), Value::Tape(off)) if off == offset => Some(a),
-                _ => None
+                _ => None,
             }
         } else {
             None

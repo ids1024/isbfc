@@ -1,7 +1,7 @@
-use crate::AST;
-use crate::lir::RVal;
 use super::dag::{Value, DAG};
 use super::ir::IR;
+use crate::lir::RVal;
+use crate::AST;
 
 pub fn optimize(body: &[AST]) -> Vec<IR> {
     optimize_expr(body).0
