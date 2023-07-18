@@ -223,9 +223,11 @@ version = "0.0.1"
 dependencies = [
  "clap",
  "cranelift",
+ "cranelift-codegen",
  "lazy_static",
  "redox_syscall",
  "static_assertions",
+ "target-lexicon",
  "unicode-width",
 ]
 

@@ -1,13 +1,11 @@
 use crate::lir::{CowStr, LVal, RVal, LIR};
 use std::collections::HashMap;
-use std::fmt::Write;
 
-use cranelift::codegen::cursor::FuncCursor;
-use cranelift::codegen::ir::function::Function;
-use cranelift::codegen::ir::immediates::Offset32;
-use cranelift::codegen::ir::InsertBuilder;
-use cranelift::codegen::ir::InstBuilder;
 use cranelift::prelude::*;
+use cranelift_codegen::cursor::FuncCursor;
+use cranelift_codegen::ir::function::Function;
+use cranelift_codegen::ir::immediates::Offset32;
+use cranelift_codegen::ir::InstBuilder;
 
 struct Codegen {
     cell_type: Type,
@@ -19,6 +17,17 @@ struct Codegen {
 }
 
 impl Codegen {
+    fn new(cell_type: Type, tape: Value, tape_cursor: Variable) -> Self {
+        Self {
+            cell_type,
+            tape,
+            tape_cursor,
+            regs: HashMap::new(),
+            bufs: HashMap::new(),
+            labels: HashMap::new(),
+        }
+    }
+
     // Return value must be a pointer
     fn lval_to_cl(&self, cursor: &mut FuncCursor, val: &LVal) -> Value {
         match val {
@@ -54,32 +63,58 @@ impl Codegen {
         }
     }
 
-    fn block(&mut self, builder: &mut FunctionBuilder, label: CowStr) -> Block {
+    fn block(&mut self, builder: &mut FunctionBuilder, label: &CowStr) -> Block {
         *self
             .labels
             .entry(label.clone())
             .or_insert_with(|| builder.create_block())
     }
 
-    fn intr(&mut self, builder: &mut FunctionBuilder, lir: LIR) {
+    fn binary_op<F>(&self, cursor: &mut FuncCursor, res_ptr: &LVal, lhs: &RVal, rhs: &RVal, f: F)
+    where
+        F: Fn(&mut FuncCursor, Value, Value) -> Value,
+    {
+        let res_ptr = self.lval_to_cl(cursor, res_ptr);
+        let lhs = self.rval_to_cl(cursor, lhs);
+        let rhs = self.rval_to_cl(cursor, rhs);
+        let res = f(cursor, lhs, rhs);
+        cursor
+            .ins()
+            .store(MemFlags::new(), res, res_ptr, Offset32::new(0));
+    }
+
+    fn instr(&mut self, builder: &mut FunctionBuilder, lir: &LIR) {
         match lir {
             LIR::Shift(offset) => {
                 let mut tape_cursor = builder.use_var(self.tape_cursor);
-                let offset = builder.cursor().ins().iconst(types::I32, i64::from(offset));
+                let offset = builder
+                    .cursor()
+                    .ins()
+                    .iconst(types::I32, i64::from(*offset));
                 tape_cursor = builder.cursor().ins().sadd_overflow(tape_cursor, offset).0;
                 builder.def_var(self.tape_cursor, tape_cursor);
             }
-            LIR::Mul(res_ptr, lhs, rhs) => {
-                let res_ptr = self.lval_to_cl(&mut builder.cursor(), &res_ptr);
-                let lhs = self.rval_to_cl(&mut builder.cursor(), &lhs);
-                let rhs = self.rval_to_cl(&mut builder.cursor(), &rhs);
-                let res = builder.cursor().ins().imul(lhs, rhs);
-                builder
-                    .cursor()
-                    .ins()
-                    .store(MemFlags::new(), res, res_ptr, Offset32::new(0));
-            }
-            // TODO Add, Sub
+            LIR::Mul(res_ptr, lhs, rhs) => self.binary_op(
+                &mut builder.cursor(),
+                res_ptr,
+                lhs,
+                rhs,
+                |cursor, lhs, rhs| cursor.ins().imul(lhs, rhs),
+            ),
+            LIR::Add(res_ptr, lhs, rhs) => self.binary_op(
+                &mut builder.cursor(),
+                res_ptr,
+                lhs,
+                rhs,
+                |cursor, lhs, rhs| cursor.ins().iadd(lhs, rhs),
+            ),
+            LIR::Sub(res_ptr, lhs, rhs) => self.binary_op(
+                &mut builder.cursor(),
+                res_ptr,
+                lhs,
+                rhs,
+                |cursor, lhs, rhs| cursor.ins().isub(lhs, rhs),
+            ),
             LIR::Mov(dst, src) => {
                 let dst = self.lval_to_cl(&mut builder.cursor(), &dst);
                 let src = self.rval_to_cl(&mut builder.cursor(), &src);
@@ -97,32 +132,52 @@ impl Codegen {
                 builder.cursor().ins().jump(block, &[]);
                 // XXX make sure block is terminated?
             }
-            // TODO Jz, Jnz
-            // TODO DeclareBssBuf
-            // TODO Input, Output
-            _ => {} /*
-                    Shift(i32),
-                    Mul(LVal, RVal, RVal),
-                    Add(LVal, RVal, RVal),
-                    Sub(LVal, RVal, RVal),
-                    Mov(LVal, RVal),
-                    Label(CowStr),
-                    Jp(CowStr),
-                    Jz(RVal, CowStr),
-                    Jnz(RVal, CowStr),
-                    DeclareBssBuf(CowStr, usize),
-                    Input(CowStr, usize, usize),
-                    Output(CowStr, usize, usize),
-                    */
+            LIR::Jz(comparand, label) => {
+                // TODO
+            }
+            LIR::Jnz(comparand, label) => {
+                // TODO
+            }
+            LIR::DeclareBssBuf(buffer, len) => {
+                // TODO
+            }
+            LIR::Input(buffer, offset, len) => {
+                // TODO
+            }
+            LIR::Output(buffer, offset, len) => {
+                // TODO
+            }
         }
     }
 }
 
-fn f() {
+pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
     let mut func = Function::new();
     let mut context = FunctionBuilderContext::new();
     let mut builder = FunctionBuilder::new(&mut func, &mut context);
     let block = builder.create_block();
     builder.switch_to_block(block);
-    InsertBuilder::new(&mut builder.cursor());
+
+    // TODO
+    let codegen = Codegen::new(cell_type, todo!(), todo!());
+
+    for i in lir {
+        codegen.instr(&mut builder, i);
+    }
+
+    builder.seal_all_blocks();
+    builder.finalize();
+
+    let context = cranelift_codegen::Context::for_function(func);
+    let mut code = Vec::new();
+    use std::str::FromStr; // TODO
+    let shared_builder = cranelift_codegen::settings::builder();
+    let shared_flags = cranelift_codegen::settings::Flags::new(shared_builder);
+    let isa = cranelift_codegen::isa::lookup(target_lexicon::triple!("x86_64"))
+        .unwrap()
+        .finish(shared_flags)
+        .unwrap();
+    context.compile_and_emit(&*isa, &mut code, todo!()).unwrap();
+
+    code
 }

@@ -14,6 +14,8 @@ unicode-width = "0.1"
 static_assertions = "0.3"
 lazy_static = "1.4"
 cranelift = "0.97.1"
+cranelift-codegen = { version = "0.97.1", features = ["x86"] }
+target-lexicon = "0.12.9"
 
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.1"
