@@ -9,13 +9,13 @@ edition = "2021"
 default-run = "isbfc"
 
 [dependencies]
-clap = "2.33"
+clap = "3.0"
 unicode-width = "0.1"
-static_assertions = "0.3"
+static_assertions = "1.1.0"
 lazy_static = "1.4"
-cranelift = "0.97.1"
-cranelift-codegen = { version = "0.97.1", features = ["x86"] }
+cranelift = "0.102.0"
+cranelift-codegen = { version = "0.102.0", features = ["x86"] }
 target-lexicon = "0.12.9"
 
 [target.'cfg(target_os = "redox")'.dependencies]
-redox_syscall = "0.1"
+redox_syscall = "0.4"

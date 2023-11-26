@@ -26,10 +26,10 @@ pub const EHDR_SIZE: usize = 64;
 pub const PHDR_SIZE: usize = 56;
 pub const SHDR_SIZE: usize = 64;
 
-assert_eq_size!(ident_size_assert; Elf64_Ident, [u8; 16]);
-assert_eq_size!(ehdr_size_assert; Elf64_Ehdr, [u8; EHDR_SIZE]);
-assert_eq_size!(phdr_size_assert; Elf64_Phdr, [u8; PHDR_SIZE]);
-assert_eq_size!(shdr_size_assert; Elf64_Shdr, [u8; SHDR_SIZE]);
+assert_eq_size!(Elf64_Ident, [u8; 16]);
+assert_eq_size!(Elf64_Ehdr, [u8; EHDR_SIZE]);
+assert_eq_size!(Elf64_Phdr, [u8; PHDR_SIZE]);
+assert_eq_size!(Elf64_Shdr, [u8; SHDR_SIZE]);
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

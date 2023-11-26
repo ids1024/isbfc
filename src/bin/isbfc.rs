@@ -34,7 +34,7 @@ impl Options {
             .about("Brainfuck compiler")
             .arg(
                 Arg::with_name("output_asm")
-                    .short("S")
+                    .short('S')
                     .help("Assemble but do not link"),
             )
             .arg(
@@ -60,12 +60,12 @@ impl Options {
             ]))
             .arg(
                 Arg::with_name("debugging_symbols")
-                    .short("g")
+                    .short('g')
                     .help("Generate debugging information"),
             )
             .arg(
                 Arg::with_name("out_name")
-                    .short("o")
+                    .short('o')
                     .help("Output file name")
                     .takes_value(true)
                     .empty_values(false)
@@ -94,7 +94,7 @@ impl Options {
             )
             .arg(
                 Arg::with_name("level")
-                    .short("O")
+                    .short('O')
                     .help("Optimization level")
                     .takes_value(true)
                     .default_value("1"),
