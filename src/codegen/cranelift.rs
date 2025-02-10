@@ -29,9 +29,16 @@ impl Codegen {
         }
     }
 
-    fn store(&self, builder: &mut FunctionBuilder, lval: &LVal, val: Value) {
+    fn store(&mut self, builder: &mut FunctionBuilder, lval: &LVal, val: Value) {
         match lval {
-            LVal::Reg(reg) => builder.def_var(*self.regs.get(reg).unwrap(), val),
+            LVal::Reg(reg) => {
+                let var = *self.regs.entry(*reg).or_insert_with(|| {
+                    let var = Variable::from_u32(reg + 1); // TODO?
+                    builder.declare_var(var, self.cell_type);
+                    var
+                });
+                builder.def_var(var, val);
+            }
             LVal::Tape(offset) => {
                 builder.ins().store(
                     MemFlags::new(),
@@ -41,7 +48,10 @@ impl Codegen {
                 );
             }
             LVal::Buf(buf, offset) => {
-                let buf = *self.bufs.get(buf).unwrap();
+                let buf = *self.bufs.entry(buf.clone()).or_insert_with(|| {
+                    // XXX
+                    builder.ins().get_stack_pointer(self.cell_type)
+                });
                 builder.ins().store(
                     MemFlags::new(),
                     val,
@@ -84,8 +94,14 @@ impl Codegen {
             .or_insert_with(|| builder.create_block())
     }
 
-    fn binary_op<F>(&self, builder: &mut FunctionBuilder, lval: &LVal, lhs: &RVal, rhs: &RVal, f: F)
-    where
+    fn binary_op<F>(
+        &mut self,
+        builder: &mut FunctionBuilder,
+        lval: &LVal,
+        lhs: &RVal,
+        rhs: &RVal,
+        f: F,
+    ) where
         F: Fn(&mut FuncCursor, Value, Value) -> Value,
     {
         let lhs = self.rval_to_cl(builder, lhs);
@@ -122,6 +138,7 @@ impl Codegen {
                 self.store(builder, dst, src);
             }
             LIR::Label(label) => {
+                // TODO seal current block
                 let block = self.block(builder, label);
                 builder.switch_to_block(block);
             }
