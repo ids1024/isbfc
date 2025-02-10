@@ -173,15 +173,13 @@ pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
     builder.finalize();
 
     let context = cranelift_codegen::Context::for_function(func);
-    let mut code = Vec::new();
-    use std::str::FromStr; // TODO
     let shared_builder = cranelift_codegen::settings::builder();
     let shared_flags = cranelift_codegen::settings::Flags::new(shared_builder);
     let isa = cranelift_codegen::isa::lookup(target_lexicon::triple!("x86_64"))
         .unwrap()
         .finish(shared_flags)
         .unwrap();
-    context.compile_and_emit(&*isa, &mut code, todo!()).unwrap();
+    let compiled_code = context.compile(&*isa, todo!()).unwrap();
 
-    code
+    compiled_code.buffer.data().to_vec()
 }
