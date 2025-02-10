@@ -1,5 +1,3 @@
-extern crate isbfc;
-
 use isbfc::codegen::c_codegen::{codegen, CellType};
 use isbfc::{OldOptimizer, Optimizer};
 use std::io::{Read, Write};

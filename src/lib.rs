@@ -2,8 +2,6 @@
 //!
 //! # Examples
 //! ```
-//! extern crate isbfc;
-//!
 //! fn main() {
 //!     // 2048 is the tape length to use
 //!     let assembly = isbfc::parse(",[.,]").unwrap().optimize().compile(2048);
