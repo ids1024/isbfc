@@ -163,11 +163,14 @@ pub fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
     let block = builder.create_block();
     builder.switch_to_block(block);
 
+    // XXX
+    let tape_ptr = builder.ins().get_stack_pointer(cell_type);
+
     let tape_var = Variable::from_u32(0); // XXX?
     builder.declare_var(tape_var, cell_type);
 
     // TODO
-    let codegen = Codegen::new(cell_type, todo!(), tape_var);
+    let mut codegen = Codegen::new(cell_type, tape_ptr, tape_var);
 
     for i in lir {
         codegen.instr(&mut builder, i);
