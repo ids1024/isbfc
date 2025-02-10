@@ -16,6 +16,7 @@ lazy_static = "1.4"
 cranelift = "0.116.0"
 cranelift-codegen = { version = "0.116.0", features = ["x86"] }
 target-lexicon = "0.13.2"
+cranelift-control = "0.116.1"
 
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.4"

@@ -6,6 +6,7 @@ use cranelift_codegen::cursor::FuncCursor;
 use cranelift_codegen::ir::function::Function;
 use cranelift_codegen::ir::immediates::Offset32;
 use cranelift_codegen::ir::InstBuilder;
+use cranelift_control::ControlPlane;
 
 struct Codegen {
     cell_type: Type,
@@ -179,7 +180,9 @@ pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
         .unwrap()
         .finish(shared_flags)
         .unwrap();
-    let compiled_code = context.compile(&*isa, todo!()).unwrap();
+    let compiled_code = context
+        .compile(&*isa, &mut ControlPlane::default())
+        .unwrap();
 
     compiled_code.buffer.data().to_vec()
 }

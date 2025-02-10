@@ -265,6 +265,7 @@ dependencies = [
  "clap",
  "cranelift",
  "cranelift-codegen",
+ "cranelift-control",
  "lazy_static",
  "redox_syscall",
  "static_assertions",
