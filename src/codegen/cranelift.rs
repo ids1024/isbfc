@@ -9,7 +9,7 @@ use cranelift_codegen::ir::InstBuilder;
 
 struct Codegen {
     cell_type: Type,
-    regs: HashMap<u32, Value>,
+    regs: HashMap<u32, Variable>,
     tape: Value,
     tape_cursor: Variable,
     bufs: HashMap<CowStr, Value>,
@@ -28,23 +28,36 @@ impl Codegen {
         }
     }
 
-    // Return value must be a pointer
-    fn lval_to_cl(&self, cursor: &mut FuncCursor, val: &LVal) -> Value {
-        match val {
-            LVal::Reg(reg) => {}
-            LVal::Tape(offset) => {}
-            LVal::Buf(buf, offset) => {}
+    fn store(&self, builder: &mut FunctionBuilder, lval: &LVal, val: Value) {
+        match lval {
+            LVal::Reg(reg) => builder.def_var(*self.regs.get(reg).unwrap(), val),
+            LVal::Tape(offset) => {
+                builder.cursor().ins().store(
+                    MemFlags::new(),
+                    val,
+                    self.tape,
+                    *offset * self.cell_type.bytes() as i32,
+                );
+            }
+            LVal::Buf(buf, offset) => {
+                let buf = *self.bufs.get(buf).unwrap();
+                builder.cursor().ins().store(
+                    MemFlags::new(),
+                    val,
+                    buf,
+                    *offset as i32 * self.cell_type.bytes() as i32,
+                );
+            }
         }
-        todo!()
     }
 
     // Return value must be an instance of cell type, not a pointer
-    fn rval_to_cl(&self, cursor: &mut FuncCursor, val: &RVal) -> Value {
+    fn rval_to_cl(&self, builder: &mut FunctionBuilder, val: &RVal) -> Value {
         match val {
-            RVal::Reg(reg) => *self.regs.get(reg).unwrap(),
+            RVal::Reg(reg) => builder.use_var(*self.regs.get(reg).unwrap()),
             // XXX offset in bytes
             // XXX offset relative to tape cursor? how to crack that?
-            RVal::Tape(offset) => cursor.ins().load(
+            RVal::Tape(offset) => builder.cursor().ins().load(
                 self.cell_type,
                 MemFlags::new(),
                 self.tape,
@@ -52,14 +65,17 @@ impl Codegen {
             ),
             RVal::Buf(buf, offset) => {
                 let buf = *self.bufs.get(buf).unwrap();
-                cursor.ins().load(
+                builder.cursor().ins().load(
                     self.cell_type,
                     MemFlags::new(),
                     buf,
                     *offset as i32 * self.cell_type.bytes() as i32,
                 )
             }
-            RVal::Immediate(value) => cursor.ins().iconst(self.cell_type, i64::from(*value)),
+            RVal::Immediate(value) => builder
+                .cursor()
+                .ins()
+                .iconst(self.cell_type, i64::from(*value)),
         }
     }
 
@@ -70,17 +86,14 @@ impl Codegen {
             .or_insert_with(|| builder.create_block())
     }
 
-    fn binary_op<F>(&self, cursor: &mut FuncCursor, res_ptr: &LVal, lhs: &RVal, rhs: &RVal, f: F)
+    fn binary_op<F>(&self, builder: &mut FunctionBuilder, lval: &LVal, lhs: &RVal, rhs: &RVal, f: F)
     where
         F: Fn(&mut FuncCursor, Value, Value) -> Value,
     {
-        let res_ptr = self.lval_to_cl(cursor, res_ptr);
-        let lhs = self.rval_to_cl(cursor, lhs);
-        let rhs = self.rval_to_cl(cursor, rhs);
-        let res = f(cursor, lhs, rhs);
-        cursor
-            .ins()
-            .store(MemFlags::new(), res, res_ptr, Offset32::new(0));
+        let lhs = self.rval_to_cl(builder, lhs);
+        let rhs = self.rval_to_cl(builder, rhs);
+        let res = f(&mut builder.cursor(), lhs, rhs);
+        self.store(builder, lval, res);
     }
 
     fn instr(&mut self, builder: &mut FunctionBuilder, lir: &LIR) {
@@ -94,34 +107,24 @@ impl Codegen {
                 tape_cursor = builder.cursor().ins().sadd_overflow(tape_cursor, offset).0;
                 builder.def_var(self.tape_cursor, tape_cursor);
             }
-            LIR::Mul(res_ptr, lhs, rhs) => self.binary_op(
-                &mut builder.cursor(),
-                res_ptr,
-                lhs,
-                rhs,
-                |cursor, lhs, rhs| cursor.ins().imul(lhs, rhs),
-            ),
-            LIR::Add(res_ptr, lhs, rhs) => self.binary_op(
-                &mut builder.cursor(),
-                res_ptr,
-                lhs,
-                rhs,
-                |cursor, lhs, rhs| cursor.ins().iadd(lhs, rhs),
-            ),
-            LIR::Sub(res_ptr, lhs, rhs) => self.binary_op(
-                &mut builder.cursor(),
-                res_ptr,
-                lhs,
-                rhs,
-                |cursor, lhs, rhs| cursor.ins().isub(lhs, rhs),
-            ),
+            LIR::Mul(res_ptr, lhs, rhs) => {
+                self.binary_op(builder, res_ptr, lhs, rhs, |cursor, lhs, rhs| {
+                    cursor.ins().imul(lhs, rhs)
+                })
+            }
+            LIR::Add(res_ptr, lhs, rhs) => {
+                self.binary_op(builder, res_ptr, lhs, rhs, |cursor, lhs, rhs| {
+                    cursor.ins().iadd(lhs, rhs)
+                })
+            }
+            LIR::Sub(res_ptr, lhs, rhs) => {
+                self.binary_op(builder, res_ptr, lhs, rhs, |cursor, lhs, rhs| {
+                    cursor.ins().isub(lhs, rhs)
+                })
+            }
             LIR::Mov(dst, src) => {
-                let dst = self.lval_to_cl(&mut builder.cursor(), &dst);
-                let src = self.rval_to_cl(&mut builder.cursor(), &src);
-                builder
-                    .cursor()
-                    .ins()
-                    .store(MemFlags::new(), src, dst, Offset32::new(0));
+                let src = self.rval_to_cl(builder, &src);
+                self.store(builder, dst, src);
             }
             LIR::Label(label) => {
                 let block = self.block(builder, label);
