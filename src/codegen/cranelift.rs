@@ -163,8 +163,11 @@ pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
     let block = builder.create_block();
     builder.switch_to_block(block);
 
+    let tape_var = Variable::from_u32(0); // XXX?
+    builder.declare_var(tape_var, cell_type);
+
     // TODO
-    let codegen = Codegen::new(cell_type, todo!(), todo!());
+    let codegen = Codegen::new(cell_type, todo!(), tape_var);
 
     for i in lir {
         codegen.instr(&mut builder, i);
