@@ -156,7 +156,7 @@ impl Codegen {
     }
 }
 
-pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
+fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
     let mut func = Function::new();
     let mut context = FunctionBuilderContext::new();
     let mut builder = FunctionBuilder::new(&mut func, &mut context);
@@ -176,7 +176,12 @@ pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
     builder.seal_all_blocks();
     builder.finalize();
 
-    let context = cranelift_codegen::Context::for_function(func);
+    func
+}
+
+pub fn codegen(lir: &[LIR], cell_type: Type, tape_size: i32) -> Vec<u8> {
+    let func = codegen_fn(lir, cell_type, tape_size);
+    let mut context = cranelift_codegen::Context::for_function(func);
     let shared_builder = cranelift_codegen::settings::builder();
     let shared_flags = cranelift_codegen::settings::Flags::new(shared_builder);
     let isa = cranelift_codegen::isa::lookup(target_lexicon::triple!("x86_64"))
