@@ -140,25 +140,33 @@ impl Codegen {
             LIR::Label(label) => {
                 // TODO seal current block
                 let block = self.block(builder, label);
+                // Jump to next block; XXX if not ended on jump?
+                builder.ins().jump(block, &[]);
                 builder.switch_to_block(block);
             }
             LIR::Jp(label) => {
                 let block = self.block(builder, label);
                 builder.ins().jump(block, &[]);
                 // XXX make sure block is terminated?
+                
+                // XXX
+                let next_block = builder.create_block();
+                builder.switch_to_block(next_block);
             }
             LIR::Jz(comparand, label) => {
                 let block = self.block(builder, label);
-                let else_block = block; // XXX continue? Add block?
+                let else_block = builder.create_block(); // XXX continue? Add block?
                 let value = self.rval_to_cl(builder, &comparand);
                 let value = builder.ins().bnot(value);
                 builder.ins().brif(value, block, &[], else_block, &[]);
+                builder.switch_to_block(else_block);
             }
             LIR::Jnz(comparand, label) => {
                 let block = self.block(builder, label);
-                let else_block = block; // XXX continue? Add block?
+                let else_block = builder.create_block(); // XXX continue? Add block?
                 let value = self.rval_to_cl(builder, &comparand);
                 builder.ins().brif(value, block, &[], else_block, &[]);
+                builder.switch_to_block(else_block);
             }
             LIR::DeclareBssBuf(buffer, len) => {
                 // TODO
