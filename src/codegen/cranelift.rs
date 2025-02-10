@@ -32,7 +32,7 @@ impl Codegen {
         match lval {
             LVal::Reg(reg) => builder.def_var(*self.regs.get(reg).unwrap(), val),
             LVal::Tape(offset) => {
-                builder.cursor().ins().store(
+                builder.ins().store(
                     MemFlags::new(),
                     val,
                     self.tape,
@@ -41,7 +41,7 @@ impl Codegen {
             }
             LVal::Buf(buf, offset) => {
                 let buf = *self.bufs.get(buf).unwrap();
-                builder.cursor().ins().store(
+                builder.ins().store(
                     MemFlags::new(),
                     val,
                     buf,
@@ -57,7 +57,7 @@ impl Codegen {
             RVal::Reg(reg) => builder.use_var(*self.regs.get(reg).unwrap()),
             // XXX offset in bytes
             // XXX offset relative to tape cursor? how to crack that?
-            RVal::Tape(offset) => builder.cursor().ins().load(
+            RVal::Tape(offset) => builder.ins().load(
                 self.cell_type,
                 MemFlags::new(),
                 self.tape,
@@ -65,17 +65,14 @@ impl Codegen {
             ),
             RVal::Buf(buf, offset) => {
                 let buf = *self.bufs.get(buf).unwrap();
-                builder.cursor().ins().load(
+                builder.ins().load(
                     self.cell_type,
                     MemFlags::new(),
                     buf,
                     *offset as i32 * self.cell_type.bytes() as i32,
                 )
             }
-            RVal::Immediate(value) => builder
-                .cursor()
-                .ins()
-                .iconst(self.cell_type, i64::from(*value)),
+            RVal::Immediate(value) => builder.ins().iconst(self.cell_type, i64::from(*value)),
         }
     }
 
@@ -100,11 +97,8 @@ impl Codegen {
         match lir {
             LIR::Shift(offset) => {
                 let mut tape_cursor = builder.use_var(self.tape_cursor);
-                let offset = builder
-                    .cursor()
-                    .ins()
-                    .iconst(types::I32, i64::from(*offset));
-                tape_cursor = builder.cursor().ins().sadd_overflow(tape_cursor, offset).0;
+                let offset = builder.ins().iconst(types::I32, i64::from(*offset));
+                tape_cursor = builder.ins().sadd_overflow(tape_cursor, offset).0;
                 builder.def_var(self.tape_cursor, tape_cursor);
             }
             LIR::Mul(res_ptr, lhs, rhs) => {
@@ -132,27 +126,21 @@ impl Codegen {
             }
             LIR::Jp(label) => {
                 let block = self.block(builder, label);
-                builder.cursor().ins().jump(block, &[]);
+                builder.ins().jump(block, &[]);
                 // XXX make sure block is terminated?
             }
             LIR::Jz(comparand, label) => {
                 let block = self.block(builder, label);
                 let else_block = block; // XXX continue? Add block?
                 let value = self.rval_to_cl(builder, &comparand);
-                let value = builder.cursor().ins().bnot(value);
-                builder
-                    .cursor()
-                    .ins()
-                    .brif(value, block, &[], else_block, &[]);
+                let value = builder.ins().bnot(value);
+                builder.ins().brif(value, block, &[], else_block, &[]);
             }
             LIR::Jnz(comparand, label) => {
                 let block = self.block(builder, label);
                 let else_block = block; // XXX continue? Add block?
                 let value = self.rval_to_cl(builder, &comparand);
-                builder
-                    .cursor()
-                    .ins()
-                    .brif(value, block, &[], else_block, &[]);
+                builder.ins().brif(value, block, &[], else_block, &[]);
             }
             LIR::DeclareBssBuf(buffer, len) => {
                 // TODO
