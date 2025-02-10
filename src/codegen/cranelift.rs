@@ -156,7 +156,7 @@ impl Codegen {
     }
 }
 
-fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
+pub fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
     let mut func = Function::new();
     let mut context = FunctionBuilderContext::new();
     let mut builder = FunctionBuilder::new(&mut func, &mut context);

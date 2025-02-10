@@ -1,3 +1,3 @@
 pub mod c_codegen;
 mod codegen;
-mod cranelift;
+pub mod cranelift;
