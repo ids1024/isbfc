@@ -136,10 +136,23 @@ impl Codegen {
                 // XXX make sure block is terminated?
             }
             LIR::Jz(comparand, label) => {
-                // TODO
+                let block = self.block(builder, label);
+                let else_block = block; // XXX continue? Add block?
+                let value = self.rval_to_cl(builder, &comparand);
+                let value = builder.cursor().ins().bnot(value);
+                builder
+                    .cursor()
+                    .ins()
+                    .brif(value, block, &[], else_block, &[]);
             }
             LIR::Jnz(comparand, label) => {
-                // TODO
+                let block = self.block(builder, label);
+                let else_block = block; // XXX continue? Add block?
+                let value = self.rval_to_cl(builder, &comparand);
+                builder
+                    .cursor()
+                    .ins()
+                    .brif(value, block, &[], else_block, &[]);
             }
             LIR::DeclareBssBuf(buffer, len) => {
                 // TODO
