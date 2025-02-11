@@ -200,6 +200,7 @@ pub fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
     for i in lir {
         codegen.instr(&mut builder, i);
     }
+    builder.ins().return_(&[]);
 
     builder.seal_all_blocks();
     builder.finalize();

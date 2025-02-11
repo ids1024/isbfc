@@ -1,5 +1,5 @@
 use cranelift_codegen::ir::types::I64;
-use cranelift_codegen::ir::{Signature};
+use cranelift_codegen::ir::Signature;
 use cranelift_codegen::isa::CallConv;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, DataId, FuncId, Module};
@@ -20,7 +20,9 @@ fn main() {
     let mut module = JITModule::new(builder);
 
     //let data_id = DataId::from_u32(0);
-    let data_id = module.declare_data("tape", cranelift_module::Linkage::Local, true, false).unwrap();
+    let data_id = module
+        .declare_data("tape", cranelift_module::Linkage::Local, true, false)
+        .unwrap();
     let mut data_desc = DataDescription::new();
     data_desc.define_zeroinit(8192 * 8);
     module.define_data(data_id, &data_desc).unwrap();
@@ -28,7 +30,9 @@ fn main() {
 
     //let func_id = FuncId::from_u32(0);
     let signature = Signature::new(CallConv::SystemV);
-    let func_id = module.declare_function("main", cranelift_module::Linkage::Local, &signature).unwrap();
+    let func_id = module
+        .declare_function("main", cranelift_module::Linkage::Local, &signature)
+        .unwrap();
     //let mut context = module.make_context();
     let mut context = cranelift_codegen::Context::for_function(func);
     // TODO populate context
