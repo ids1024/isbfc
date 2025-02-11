@@ -148,7 +148,7 @@ impl Codegen {
                 let block = self.block(builder, label);
                 builder.ins().jump(block, &[]);
                 // XXX make sure block is terminated?
-                
+
                 // XXX
                 let next_block = builder.create_block();
                 builder.switch_to_block(next_block);
