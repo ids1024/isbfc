@@ -192,7 +192,7 @@ pub fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
     let tape_ptr = builder.ins().get_stack_pointer(cell_type);
 
     let tape_var = Variable::from_u32(0); // XXX?
-    builder.declare_var(tape_var, cell_type);
+    builder.declare_var(tape_var, types::I32);
 
     // TODO
     let mut codegen = Codegen::new(cell_type, tape_ptr, tape_var);
