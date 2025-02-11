@@ -51,5 +51,6 @@ fn main() {
     }
     module.finalize_definitions().unwrap();
     // TODO jump to fn?
-    module.get_finalized_function(func_id);
+    let fn_ptr = module.get_finalized_function(func_id);
+    unsafe { (*(fn_ptr as *const extern "C" fn()))() };
 }
