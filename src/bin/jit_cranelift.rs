@@ -32,9 +32,20 @@ fn main() {
     //let mut context = module.make_context();
     let mut context = cranelift_codegen::Context::for_function(func);
     // TODO populate context
-    module.define_function(func_id, &mut context).unwrap();
+    if let Err(err) = module.define_function(func_id, &mut context) {
+        eprintln!("{}", err);
+        if let cranelift_module::ModuleError::Compilation(err) = &err {
+            if let cranelift_codegen::CodegenError::Verifier(errs) = err {
+                for err in &errs.0 {
+                    eprintln!("{}", err);
+                }
+                std::process::exit(1);
+            }
+        }
+        eprintln!("{:?}", err);
+        std::process::exit(1);
+    }
     module.finalize_definitions().unwrap();
     // TODO jump to fn?
     module.get_finalized_function(func_id);
-
 }
