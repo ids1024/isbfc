@@ -9,7 +9,7 @@ edition = "2021"
 default-run = "isbfc"
 
 [dependencies]
-clap = "3.0"
+clap = "4.5"
 unicode-width = "0.2"
 static_assertions = "1.1.0"
 lazy_static = "1.4"

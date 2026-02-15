@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::process::{self, Command, Stdio};
 
-use clap::{App, Arg, ArgGroup};
+use clap::{Arg, ArgAction, ArgGroup};
 
 use isbfc::codegen::c_codegen::{codegen, CellType};
 use isbfc::{Optimizer, OPTIMIZERS};
@@ -28,92 +28,94 @@ struct Options {
 
 impl Options {
     fn match_options() -> Self {
-        let matches = App::new("isbfc")
+        let matches = clap::Command::new("isbfc")
             .version("0.0.1")
             .author("Ian D. Scott <ian@iandouglasscott.com>")
             .about("Brainfuck compiler")
             .arg(
-                Arg::with_name("output_asm")
+                Arg::new("output_asm")
                     .short('S')
+                    .action(ArgAction::SetTrue)
                     .help("Assemble but do not link"),
             )
             .arg(
-                Arg::with_name("dump_ast")
+                Arg::new("dump_ast")
                     .long("dump-ast")
+                    .action(ArgAction::SetTrue)
                     .help("Dump AST; for debugging"),
             )
             .arg(
-                Arg::with_name("dump_ir")
+                Arg::new("dump_ir")
                     .long("dump-ir")
+                    .action(ArgAction::SetTrue)
                     .help("Dump intermediate representation; for debugging"),
             )
             .arg(
-                Arg::with_name("dump_lir")
+                Arg::new("dump_lir")
                     .long("dump-lir")
+                    .action(ArgAction::SetTrue)
                     .help("Dump low level intermediate representation; for debugging"),
             )
-            .group(ArgGroup::with_name("actions").args(&[
+            .group(ArgGroup::new("actions").args(&[
                 "output_asm",
                 "dump_ast",
                 "dump_ir",
                 "dump_lir",
             ]))
             .arg(
-                Arg::with_name("debugging_symbols")
+                Arg::new("debugging_symbols")
                     .short('g')
+                    .action(ArgAction::SetTrue)
                     .help("Generate debugging information"),
             )
             .arg(
-                Arg::with_name("out_name")
+                Arg::new("out_name")
                     .short('o')
                     .help("Output file name")
-                    .takes_value(true)
-                    .empty_values(false)
+                    .value_parser(clap::builder::NonEmptyStringValueParser::new())
                     .value_name("file"),
             )
             .arg(
-                Arg::with_name("tape_size")
+                Arg::new("tape_size")
                     .long("tape-size")
                     .help("Size of tape")
-                    .takes_value(true)
-                    .empty_values(false)
+                    .value_parser(clap::builder::NonEmptyStringValueParser::new())
                     .default_value("8192")
                     .value_name("bytes"),
             )
             .arg(
-                Arg::with_name("minimal_elf")
+                Arg::new("minimal_elf")
                     .long("minimal-elf")
+                    .action(ArgAction::SetTrue)
                     .help("Generate minimal ELF executable"),
             )
             .arg(
-                Arg::with_name("optimizer")
+                Arg::new("optimizer")
                     .long("optimizer")
-                    .takes_value(true)
-                    .possible_values(&OPTIMIZERS.keys().cloned().collect::<Vec<&str>>())
+                    .value_parser(clap::builder::PossibleValuesParser::new(&OPTIMIZERS.keys().cloned().collect::<Vec<&str>>()))
                     .default_value("new"),
             )
             .arg(
-                Arg::with_name("level")
+                Arg::new("level")
                     .short('O')
                     .help("Optimization level")
-                    .takes_value(true)
                     .default_value("1"),
             )
             .arg(
-                Arg::with_name("FILENAME")
+                Arg::new("FILENAME")
                     .help("Source file to compile")
                     .required(true)
                     .index(1),
             )
             .get_matches();
 
-        let action = if matches.is_present("dump_ir") {
+        let action = if matches.get_flag("dump_ir") {
             Action::DumpIr
-        } else if matches.is_present("dump_ast") {
+        } else if matches.get_flag("dump_ast") {
             Action::DumpAst
-        } else if matches.is_present("dump_lir") {
+        } else if matches.get_flag("dump_lir") {
             Action::DumpLir
-        } else if matches.is_present("output_asm") {
+        } else if matches.get_flag("output_asm") {
             Action::OutputAssembly
         } else {
             Action::Compile
@@ -121,18 +123,18 @@ impl Options {
 
         Options {
             action,
-            output: matches.value_of("out_name").map(str::to_string),
-            input: matches.value_of("FILENAME").unwrap().to_string(),
+            output: matches.get_one::<String>("out_name").cloned(),
+            input: matches.get_one::<String>("FILENAME").unwrap().clone(),
             tape_size: matches
-                .value_of("tape_size")
+                .get_one::<String>("tape_size")
                 .unwrap()
                 .parse::<i32>()
                 .unwrap(),
-            level: matches.value_of("level").unwrap().parse::<u32>().unwrap(),
-            debug: matches.is_present("debugging_symbols"),
-            minimal_elf: matches.is_present("minimal_elf"),
+            level: matches.get_one::<String>("level").unwrap().parse::<u32>().unwrap(),
+            debug: matches.get_flag("debugging_symbols"),
+            minimal_elf: matches.get_flag("minimal_elf"),
             optimizer: *OPTIMIZERS
-                .get(matches.value_of("optimizer").unwrap())
+                .get(matches.get_one::<String>("optimizer").unwrap().as_str())
                 .unwrap(),
         }
     }
