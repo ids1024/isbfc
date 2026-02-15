@@ -98,6 +98,7 @@ impl Options {
             .arg(
                 Arg::new("level")
                     .short('O')
+                    .value_parser(clap::value_parser!(u32))
                     .help("Optimization level")
                     .default_value("1"),
             )
@@ -130,7 +131,7 @@ impl Options {
                 .unwrap()
                 .parse::<i32>()
                 .unwrap(),
-            level: matches.get_one::<String>("level").unwrap().parse::<u32>().unwrap(),
+            level: *matches.get_one::<u32>("level").unwrap(),
             debug: matches.get_flag("debugging_symbols"),
             minimal_elf: matches.get_flag("minimal_elf"),
             optimizer: *OPTIMIZERS
