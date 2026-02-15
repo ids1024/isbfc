@@ -32,11 +32,10 @@ impl Codegen {
     fn store(&mut self, builder: &mut FunctionBuilder, lval: &LVal, val: Value) {
         match lval {
             LVal::Reg(reg) => {
-                let var = *self.regs.entry(*reg).or_insert_with(|| {
-                    let var = Variable::from_u32(reg + 1); // TODO?
-                    builder.declare_var(var, self.cell_type);
-                    var
-                });
+                let var = *self
+                    .regs
+                    .entry(*reg)
+                    .or_insert_with(|| builder.declare_var(self.cell_type));
                 builder.def_var(var, val);
             }
             LVal::Tape(offset) => {
@@ -191,8 +190,7 @@ pub fn codegen_fn(lir: &[LIR], cell_type: Type, tape_size: i32) -> Function {
     // XXX
     let tape_ptr = builder.ins().get_stack_pointer(cell_type);
 
-    let tape_var = Variable::from_u32(0); // XXX?
-    builder.declare_var(tape_var, types::I32);
+    let tape_var = builder.declare_var(types::I32);
 
     // TODO
     let mut codegen = Codegen::new(cell_type, tape_ptr, tape_var);
